@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Email Campaigns · YGTAR Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --color-background-primary:#ffffff;--color-background-secondary:#f5f8f6;--color-background-tertiary:#eaf0ec;
+    --color-text-primary:#16201b;--color-text-secondary:#5c6b62;--color-text-tertiary:#94a29a;
+    --color-border-secondary:rgba(22,32,27,.14);--color-border-tertiary:rgba(22,32,27,.08);
+    --radius-lg:16px;--radius-md:11px;--radius-pill:999px;
+    --green:#1D9E75;--green-dark:#178060;--green-soft:#E6F5EF;
+    --hike:#1D9E75;--bike:#E0892C;--paddle:#3E84B8;--danger:#c0492f;
+    --font-sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .scene{position:fixed;inset:0;z-index:0;pointer-events:none;background:url("action-bg.jpg") center center/cover no-repeat;filter:blur(7px) saturate(1.05);transform:scale(1.06)}
+  .scene::after{content:"";position:absolute;inset:0;background:rgba(245,248,246,.68)}
+  .topo{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.8}
+  .topo svg{width:100%;height:100%;display:block}
+  .topo path{fill:none;stroke:var(--green);stroke-width:1.4;opacity:.2}.topo .faint{opacity:.11}
+  .topo .lake{fill:var(--paddle);fill-opacity:.12;stroke:var(--paddle);stroke-opacity:.45;stroke-width:1.4;opacity:1}
+  .topo .river{stroke:var(--paddle);stroke-opacity:.5;stroke-width:2.2;fill:none;opacity:1}
+  .topo text{fill:var(--green);font-family:var(--font-sans);font-size:9px;font-weight:600;opacity:.3}
+  .topo .peak{font-size:9.5px;opacity:.42}.topo .wlabel{fill:var(--paddle);opacity:.55}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh;position:relative;z-index:1}
+  .sidebar{background:var(--color-background-primary);border-right:1px solid var(--color-border-tertiary);padding:22px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .logo{display:flex;align-items:center;gap:11px;padding:0 22px 20px;border-bottom:1px solid var(--color-border-tertiary);margin-bottom:14px}
+  .logo .badge{width:40px;height:40px;border-radius:11px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .logo .t1{font-size:14px;font-weight:700;line-height:1.2}.logo .t2{font-size:11px;color:var(--color-text-tertiary);margin-top:1px}
+  .navsec{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--color-text-tertiary);padding:14px 22px 7px}
+  .navitem{display:flex;align-items:center;gap:12px;padding:10px 22px;font-size:14px;font-weight:500;color:var(--color-text-secondary);cursor:pointer;border-left:3px solid transparent;transition:.15s}
+  .navitem i{font-size:19px}.navitem:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+  .navitem.active{color:var(--green);border-left-color:var(--green);background:var(--green-soft)}
+  .host-card{margin:auto 16px 0;padding:13px 15px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md)}
+  .host-card .h1{font-size:10.5px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.07em}
+  .host-card .h2{font-size:13px;font-weight:600;margin-top:3px}.host-card .h3{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+  .topbar{display:none;align-items:center;justify-content:space-between;background:var(--color-background-primary);border-bottom:1px solid var(--color-border-tertiary);padding:14px 18px;position:sticky;top:0;z-index:20}
+  main{padding:34px 40px 60px;max-width:1180px;width:100%}
+  .banner{position:relative;height:300px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--color-border-tertiary);margin-bottom:22px;background:var(--color-background-tertiary)}
+  .banner .bg{position:absolute;inset:0;background:url("logo.jpg") center center/cover no-repeat;filter:blur(22px) saturate(1.08);transform:scale(1.25)}
+  .banner .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(38,52,33,.14))}
+  .banner img.fg{position:relative;z-index:2;display:block;height:100%;width:100%;object-fit:contain;margin:0 auto}
+  .admin-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--bike);background:#fbeedd;border:1px solid rgba(224,137,44,.3);padding:3px 10px;border-radius:var(--radius-pill);margin-bottom:8px}
+  .page-head h1{font-size:28px;font-weight:800;letter-spacing:-.02em}.page-head p{color:var(--color-text-secondary);font-size:15px;margin-top:5px}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px;align-items:start}
+  .card{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:22px}
+  .card h3{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .field{margin-bottom:16px}.field label{display:block;font-size:13px;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;font:inherit;font-size:14.5px;padding:10px 12px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary)}
+  .field textarea{resize:vertical;min-height:170px;line-height:1.55}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .aud-count{font-size:13px;color:var(--color-text-secondary);margin-top:-8px;margin-bottom:14px}
+  .aud-count b{color:var(--green-dark)}
+  .tpls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .tpl{font-size:12.5px;font-weight:600;padding:7px 13px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-pill);cursor:pointer;color:var(--color-text-secondary);background:var(--color-background-primary);transition:.15s}
+  .tpl:hover{border-color:var(--green);color:var(--green-dark)}.tpl.sel{background:var(--green-soft);border-color:var(--green);color:var(--green-dark)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{font-size:12px;font-family:monospace;background:var(--color-background-tertiary);padding:4px 9px;border-radius:6px;cursor:pointer;color:var(--color-text-secondary)}
+  .tag:hover{background:var(--green-soft);color:var(--green-dark)}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .btn{display:inline-flex;align-items:center;gap:7px;background:var(--green);color:#fff;font-weight:600;font-size:14.5px;padding:11px 20px;border-radius:var(--radius-pill);border:none;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--green-dark)}.btn.dim{opacity:.5;pointer-events:none}
+  .btn-ghost{background:transparent;color:var(--color-text-secondary);border:1px solid var(--color-border-secondary);font-weight:600;font-size:14.5px;padding:11px 18px;border-radius:var(--radius-pill);cursor:pointer}
+  .status{margin-top:12px;font-size:14px;min-height:18px}
+  .status.ok{color:var(--green-dark)}.status.bad{color:var(--danger)}
+
+  /* preview */
+  .preview{position:sticky;top:24px}
+  .mail{border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md);overflow:hidden}
+  .mail-head{background:var(--color-background-secondary);padding:13px 16px;border-bottom:1px solid var(--color-border-tertiary);font-size:13px}
+  .mail-head .from{color:var(--color-text-tertiary)}
+  .mail-head .subj{font-weight:700;font-size:15px;margin-top:3px}
+  .mail-body{padding:18px 16px;font-size:14px;color:var(--color-text-primary);min-height:200px;white-space:pre-wrap;line-height:1.6}
+
+  /* triggers */
+  .trig{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border-tertiary)}
+  .trig:last-child{border:none}.trig .ti-info{margin-left:auto}
+  .trig .tinfo .nm{font-weight:600;font-size:14px}.trig .tinfo .ds{font-size:12.5px;color:var(--color-text-tertiary)}
+  .sw{width:40px;height:23px;border-radius:999px;background:var(--green);position:relative;flex-shrink:0;cursor:pointer}
+  .sw::after{content:"";position:absolute;top:2px;left:19px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.15s}
+  .sw.off{background:var(--color-border-secondary)}.sw.off::after{left:2px}
+  .note{font-size:12.5px;color:var(--color-text-tertiary);margin-top:12px}
+  .gate{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:26px;text-align:center;display:none}
+  .gate h3{font-size:18px;margin-bottom:6px}.gate p{color:var(--color-text-secondary);font-size:14px;margin-bottom:14px}
+  @media(max-width:900px){.cols{grid-template-columns:1fr}.preview{position:static}}
+  @media(max-width:860px){.app{grid-template-columns:1fr}.sidebar{display:none}.topbar{display:flex}main{padding:22px 16px 48px}.banner{height:200px}}
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true"></div>
+<div class="topo" aria-hidden="true">
+  <svg viewBox="0 0 720 480" preserveAspectRatio="xMidYMid slice">
+    <path d="M-20,80 C150,30 320,130 480,90 S720,30 760,110"/><path d="M-20,180 C150,130 330,230 500,190 S720,130 760,210"/>
+    <path d="M-20,280 C160,220 340,330 520,290 S720,220 760,310"/><path d="M-20,390 C170,330 350,440 540,400 S720,320 760,420"/>
+    <path d="M560,120 m-64,0 a64,44 0 1,0 128,0 a64,44 0 1,0 -128,0"/><path d="M560,120 m-40,0 a40,28 0 1,0 80,0 a40,28 0 1,0 -80,0"/>
+    <path class="lake" d="M150,330 C150,300 185,288 215,295 C250,303 268,322 262,348 C257,372 225,388 193,379 C163,371 150,358 150,330 Z"/>
+    <path class="river" d="M261,338 C300,330 330,302 360,272 C393,238 432,226 472,212 C512,198 548,205 588,196"/>
+    <text class="peak" x="548" y="124">▲ 402 m</text><text class="wlabel" x="196" y="338">168 m</text>
+  </svg>
+</div>
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo" href="index.html"><span class="badge"><i class="ti ti-mountain"></i></span><div><div class="t1">YGTAR 2026</div><div class="t2">Natural Selection AR</div></div></a>
+    <a class="navitem" href="index.html"><i class="ti ti-home"></i>Home</a>
+    <a class="navitem" href="register.html"><i class="ti ti-user-plus"></i>Register</a>
+    <a class="navitem" href="control-points.html"><i class="ti ti-flag-2"></i>Control points</a>
+    <a class="navitem" href="submit-proof.html"><i class="ti ti-camera"></i>Submit proof</a>
+    <a class="navitem" href="gallery.html"><i class="ti ti-photo"></i>Adventure photos</a>
+    <a class="navitem" href="swag.html"><i class="ti ti-shirt"></i>Swag store</a>
+    <div class="navsec">Admin</div>
+    <div class="navitem active"><i class="ti ti-mail"></i>Email campaigns</div>
+    <a class="navitem" href="admin-cp.html"><i class="ti ti-flag-cog"></i>CP management</a>
+    <div class="host-card"><div class="h1">Hosted by</div><div class="h2">Natural Selection AR</div><div class="h3">info@naturalselectionar.com</div></div>
+  </aside>
+  <div class="topbar"><a class="logo" href="index.html" style="border:none;padding:0;margin:0"><span class="badge" style="width:34px;height:34px;font-size:18px"><i class="ti ti-mountain"></i></span><div><div class="t1">YGTAR 2026</div></div></a></div>
+
+  <main>
+    <div class="banner"><div class="bg"></div><div class="veil"></div><img class="fg" src="logo.jpg" alt="You Got This Adventure Race"></div>
+    <div class="admin-tag"><i class="ti ti-shield-lock"></i>Admin</div>
+    <div class="page-head"><h1>Email campaigns</h1><p>Compose, preview, and send updates to your racers.</p></div>
+
+    <div class="gate" id="gate">
+      <h3>Organizer access only</h3>
+      <p>This area is for race organizers. Log in with an admin account to send campaigns.</p>
+      <a class="btn" href="login.html?next=admin-email.html"><i class="ti ti-login-2"></i>Log in</a>
+    </div>
+
+    <div class="cols" id="composer">
+      <!-- left: compose -->
+      <div>
+        <div class="card">
+          <h3><i class="ti ti-users"></i>Audience</h3>
+          <div class="field"><select id="audience" onchange="loadAudience()">
+            <option value="all">All racers</option>
+            <option value="active">Active (paid)</option>
+            <option value="pending">Pending payment</option>
+            <option value="captains">Team captains</option>
+          </select></div>
+          <div class="aud-count" id="audCount">Counting recipients…</div>
+
+          <h3><i class="ti ti-template"></i>Start from a template</h3>
+          <div class="tpls" id="tpls"></div>
+
+          <div class="field"><label>Subject</label><input id="subject" oninput="renderPreview()" placeholder="Subject line"></div>
+          <div class="field"><label>Body</label>
+            <textarea id="body" oninput="renderPreview()" placeholder="Write your message…"></textarea>
+            <div class="tags" id="tags">
+              <span class="tag" onclick="insTag('{{first_name}}')">{{first_name}}</span>
+              <span class="tag" onclick="insTag('{{name}}')">{{name}}</span>
+              <span class="tag" onclick="insTag('{{email}}')">{{email}}</span>
+              <span class="tag" onclick="insTag('{{team}}')">{{team}}</span>
+            </div>
+          </div>
+
+          <div class="field"><label>Schedule for later <span style="color:var(--color-text-tertiary);font-weight:400">(optional)</span></label>
+            <input id="sched" type="datetime-local"></div>
+
+          <div class="btnrow">
+            <button class="btn" id="sendBtn" onclick="sendCampaign()"><i class="ti ti-send"></i>Send now</button>
+            <button class="btn-ghost" onclick="sendTest()"><i class="ti ti-mail-fast"></i>Send test to me</button>
+            <button class="btn-ghost" onclick="schedule()"><i class="ti ti-calendar-clock"></i>Schedule</button>
+          </div>
+          <div class="status" id="status"></div>
+        </div>
+      </div>
+
+      <!-- right: preview + triggers -->
+      <div class="preview">
+        <div class="card">
+          <h3><i class="ti ti-eye"></i>Live preview</h3>
+          <div class="mail">
+            <div class="mail-head">
+              <div class="from">From: Natural Selection AR &lt;info@naturalselectionar.com&gt;</div>
+              <div class="from">To: <span id="pvTo">a racer</span></div>
+              <div class="subj" id="pvSubj">Subject line</div>
+            </div>
+            <div class="mail-body" id="pvBody">Write your message…</div>
+          </div>
+          <div class="note">Merge tags are filled per recipient. This preview uses a sample racer.</div>
+        </div>
+
+        <div class="card" style="margin-top:20px">
+          <h3><i class="ti ti-bolt"></i>Automated triggers</h3>
+          <div class="trig"><div class="tinfo"><div class="nm">Registration confirmation</div><div class="ds">Sent automatically after payment succeeds</div></div><div class="sw" onclick="this.classList.toggle('off')"></div></div>
+          <div class="trig"><div class="tinfo"><div class="nm">SPCA receipt approved</div><div class="ds">When you approve a donation receipt</div></div><div class="sw" onclick="this.classList.toggle('off')"></div></div>
+          <div class="trig"><div class="tinfo"><div class="nm">CP placement offer</div><div class="ds">When a racer earns the right to place the next CP</div></div><div class="sw" onclick="this.classList.toggle('off')"></div></div>
+          <div class="trig"><div class="tinfo"><div class="nm">Photo of the week</div><div class="ds">Monday announcement of the winning photo</div></div><div class="sw off" onclick="this.classList.toggle('off')"></div></div>
+          <div class="note">Toggles are a control panel for backend automations — the registration email is already wired through your Stripe webhook.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function token(){ try{return localStorage.getItem('ygtar_token');}catch(e){return null;} }
+  function racer(){ try{return JSON.parse(localStorage.getItem('ygtar_racer')||'{}');}catch(e){return {};} }
+  let sampleName='Jamie';
+
+  const TEMPLATES = {
+    'Welcome': { s:'Welcome to YGTAR 2026, {{first_name}}!',
+      b:"Hi {{first_name}},\n\nYou're in! The You Got This Adventure Race runs June 13 – September 30. Find a control point, snap a GPS photo, and claim it to place the next one.\n\nSee you out there,\nNatural Selection AR" },
+    'Season kickoff': { s:'The season is officially open 🏔️',
+      b:"Hey {{first_name}},\n\nControl points are live across the province. Hike, bike, and paddle your way up the leaderboard all summer long.\n\nGo get 'em,\nNatural Selection AR" },
+    'Reminder': { s:'Still time to climb the board, {{first_name}}',
+      b:"Hi {{first_name}},\n\nThe deadline is September 30 and there are plenty of control points left to claim. Every CP is a point — collect them all summer or in one big push.\n\nYou got this,\nNatural Selection AR" },
+    'Photo of the week': { s:'This week\'s winning shot is in 📸',
+      b:"Hi {{first_name}},\n\nThe racer-voted Photo of the Week has been crowned! Head to the gallery to see it and nominate your favourites for next week.\n\nCheers,\nNatural Selection AR" },
+    'Team shout-out': { s:'A note for Team {{team}}',
+      b:"Hi {{first_name}},\n\nGreat work out there with Team {{team}}. Keep the photos and control points coming!\n\nNatural Selection AR" },
+    'Final push': { s:'Final stretch — deadline September 30',
+      b:"Hi {{first_name}},\n\nThis is the final push. Get your last control points logged before the season closes on September 30.\n\nFinish strong,\nNatural Selection AR" },
+  };
+
+  function buildTemplates(){
+    document.getElementById('tpls').innerHTML = Object.keys(TEMPLATES).map(k=>'<span class="tpl" onclick="useTpl(\''+k+'\',this)">'+k+'</span>').join('');
+  }
+  function useTpl(k,el){
+    document.querySelectorAll('.tpl').forEach(t=>t.classList.remove('sel')); el.classList.add('sel');
+    document.getElementById('subject').value = TEMPLATES[k].s;
+    document.getElementById('body').value = TEMPLATES[k].b;
+    renderPreview();
+  }
+  function insTag(tag){
+    const ta=document.getElementById('body'); const s=ta.selectionStart||ta.value.length;
+    ta.value = ta.value.slice(0,s)+tag+ta.value.slice(ta.selectionEnd||s);
+    ta.focus(); renderPreview();
+  }
+  function merge(t){
+    const r=racer();
+    return (t||'').split('{{first_name}}').join(sampleName)
+      .split('{{name}}').join(sampleName+' Racer')
+      .split('{{email}}').join(r.email||'racer@email.com')
+      .split('{{team}}').join('Trail Blazers');
+  }
+  function renderPreview(){
+    document.getElementById('pvSubj').textContent = merge(document.getElementById('subject').value)||'Subject line';
+    document.getElementById('pvBody').textContent = merge(document.getElementById('body').value)||'Write your message…';
+    document.getElementById('pvTo').textContent = sampleName+' Racer';
+  }
+
+  async function loadAudience(){
+    const a=document.getElementById('audience').value;
+    const el=document.getElementById('audCount'); el.textContent='Counting recipients…';
+    try{
+      const res=await fetch('/api/racers?audience='+a,{headers:{'Authorization':'Bearer '+token()}});
+      const d=await res.json();
+      if(!res.ok) throw new Error(d.error||'');
+      sampleName=(d.sample&&d.sample[0])||'Jamie'; renderPreview();
+      el.innerHTML='This campaign will reach <b>'+d.count+'</b> racer'+(d.count===1?'':'s')+(d.sample&&d.sample.length?(' · e.g. '+d.sample.join(', ')):'');
+    }catch(e){ el.textContent='Recipient count loads once the app is live.'; }
+  }
+
+  function setStatus(msg,ok){ const s=document.getElementById('status'); s.className='status '+(ok?'ok':'bad'); s.textContent=msg; }
+
+  async function sendCampaign(){
+    const subject=document.getElementById('subject').value.trim(), html=document.getElementById('body').value.trim();
+    const audience=document.getElementById('audience').value;
+    if(!subject||!html){ setStatus('Add a subject and body first.',false); return; }
+    if(!confirm('Send this campaign to the "'+audience+'" audience now?')) return;
+    const btn=document.getElementById('sendBtn'); btn.classList.add('dim');
+    try{
+      const res=await fetch('/api/send-campaign',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
+        body:JSON.stringify({audience,subject,html})});
+      const d=await res.json(); if(!res.ok) throw new Error(d.error||'Send failed');
+      setStatus('Sent to '+d.sent+' of '+d.total+' recipients.',true);
+    }catch(e){ setStatus(e.message+' — (works once deployed live).',false); }
+    btn.classList.remove('dim');
+  }
+  async function sendTest(){
+    const r=racer(); const subject=document.getElementById('subject').value.trim(), html=document.getElementById('body').value.trim();
+    if(!r.email){ setStatus('No email on your admin account for the test.',false); return; }
+    if(!subject||!html){ setStatus('Add a subject and body first.',false); return; }
+    try{
+      const res=await fetch('/api/send-email',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
+        body:JSON.stringify({to:r.email,subject:merge(subject),html:merge(html).split('\n').join('<br>')})});
+      const d=await res.json(); if(!res.ok) throw new Error(d.error||'Send failed');
+      setStatus('Test sent to '+r.email,true);
+    }catch(e){ setStatus(e.message+' — (works once deployed live).',false); }
+  }
+  function schedule(){
+    const when=document.getElementById('sched').value;
+    if(!when){ setStatus('Pick a date and time to schedule.',false); return; }
+    setStatus('Scheduling needs a daily automation (cron) to dispatch saved campaigns — that piece isn\'t wired yet. Use "Send now" for immediate campaigns.',false);
+  }
+
+  // init
+  if(!token() || !racer().isAdmin){
+    document.getElementById('gate').style.display='block';
+    document.getElementById('composer').style.display='none';
+  } else {
+    buildTemplates(); renderPreview(); loadAudience();
+  }
+</script>
+</body>
+</html>

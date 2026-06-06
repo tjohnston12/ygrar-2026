@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Control Points · You Got This Adventure Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --color-background-primary:#ffffff;--color-background-secondary:#f5f8f6;--color-background-tertiary:#eaf0ec;
+    --color-text-primary:#16201b;--color-text-secondary:#5c6b62;--color-text-tertiary:#94a29a;
+    --color-border-secondary:rgba(22,32,27,.14);--color-border-tertiary:rgba(22,32,27,.08);
+    --radius-lg:16px;--radius-md:11px;--radius-pill:999px;
+    --green:#1D9E75;--green-dark:#178060;--green-soft:#E6F5EF;
+    --hike:#1D9E75;--bike:#E0892C;--paddle:#3E84B8;
+    --font-sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .scene{position:fixed;inset:0;z-index:0;pointer-events:none;background:url("action-bg.jpg") center center/cover no-repeat;filter:blur(7px) saturate(1.05);transform:scale(1.06)}
+  .scene::after{content:"";position:absolute;inset:0;background:rgba(245,248,246,.68)}
+  .topo{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.8}
+  .topo svg{width:100%;height:100%;display:block}
+  .topo path{fill:none;stroke:var(--green);stroke-width:1.4;opacity:.2}
+  .topo .faint{opacity:.11}
+  .topo .lake{fill:var(--paddle);fill-opacity:.12;stroke:var(--paddle);stroke-opacity:.45;stroke-width:1.4;opacity:1}
+  .topo .river{stroke:var(--paddle);stroke-opacity:.5;stroke-width:2.2;fill:none;opacity:1}
+  .topo text{fill:var(--green);font-family:var(--font-sans);font-size:9px;font-weight:600;opacity:.3}
+  .topo .peak{font-size:9.5px;opacity:.42}.topo .wlabel{fill:var(--paddle);opacity:.55}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh;position:relative;z-index:1}
+  .sidebar{background:var(--color-background-primary);border-right:1px solid var(--color-border-tertiary);padding:22px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .logo{display:flex;align-items:center;gap:11px;padding:0 22px 20px;border-bottom:1px solid var(--color-border-tertiary);margin-bottom:14px}
+  .logo .badge{width:40px;height:40px;border-radius:11px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .logo .t1{font-size:14px;font-weight:700;line-height:1.2}.logo .t2{font-size:11px;color:var(--color-text-tertiary);margin-top:1px}
+  .navsec{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--color-text-tertiary);padding:14px 22px 7px}
+  .navitem{display:flex;align-items:center;gap:12px;padding:10px 22px;font-size:14px;font-weight:500;color:var(--color-text-secondary);cursor:pointer;border-left:3px solid transparent;transition:.15s}
+  .navitem i{font-size:19px}.navitem:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+  .navitem.active{color:var(--green);border-left-color:var(--green);background:var(--green-soft)}
+  .host-card{margin:auto 16px 0;padding:13px 15px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md)}
+  .host-card .h1{font-size:10.5px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.07em}
+  .host-card .h2{font-size:13px;font-weight:600;margin-top:3px}.host-card .h3{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+  .topbar{display:none;align-items:center;justify-content:space-between;background:var(--color-background-primary);border-bottom:1px solid var(--color-border-tertiary);padding:14px 18px;position:sticky;top:0;z-index:20}
+  main{padding:34px 40px 60px;max-width:1080px;width:100%}
+  .banner{position:relative;height:300px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--color-border-tertiary);margin-bottom:22px;background:var(--color-background-tertiary)}
+  .banner .bg{position:absolute;inset:0;background:url("logo.jpg") center center/cover no-repeat;filter:blur(22px) saturate(1.08);transform:scale(1.25)}
+  .banner .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(38,52,33,.14))}
+  .banner img.fg{position:relative;z-index:2;display:block;height:100%;width:100%;object-fit:contain;margin:0 auto}
+  .page-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .page-head h1{font-size:28px;font-weight:800;letter-spacing:-.02em}.page-head p{color:var(--color-text-secondary);font-size:15px;margin-top:5px}
+  .filters{display:flex;gap:8px;margin:18px 0 14px;flex-wrap:wrap}
+  .fchip{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border-radius:var(--radius-pill);border:1px solid var(--color-border-secondary);background:var(--color-background-primary);font-size:13.5px;font-weight:600;color:var(--color-text-secondary);cursor:pointer;transition:.15s}
+  .fchip .dot{width:9px;height:9px;border-radius:50%}
+  .fchip.on{color:#fff;border-color:transparent}
+  .fchip.all.on{background:var(--green-dark)}
+  .fchip.Hiking.on{background:var(--hike)}.fchip.Biking.on{background:var(--bike)}.fchip.Paddling.on{background:var(--paddle)}
+  .mapwrap{position:relative;border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);overflow:hidden}
+  #map{height:600px;width:100%;background:var(--color-background-tertiary)}
+  .map-note{position:absolute;z-index:500;top:14px;left:50%;transform:translateX(-50%);background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-pill);padding:8px 18px;font-size:13px;color:var(--color-text-secondary);box-shadow:0 4px 14px rgba(0,0,0,.06);display:none}
+  /* leaflet popup styling */
+  .leaflet-popup-content-wrapper{border-radius:var(--radius-md)}
+  .leaflet-popup-content{margin:13px 15px;font-family:var(--font-sans)}
+  .pop h4{font-size:15px;font-weight:700;margin-bottom:3px}
+  .pop .meta{font-size:12.5px;color:var(--color-text-tertiary);margin-bottom:7px}
+  .pop .drow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--color-text-secondary)}
+  .pips{display:inline-flex;gap:3px}.pip{width:8px;height:8px;border-radius:50%;background:#d8ded9}
+  .marker-pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.3);display:grid;place-items:center}
+  .marker-pin i{transform:rotate(45deg);color:#fff;font-size:13px}
+  @media(max-width:860px){.app{grid-template-columns:1fr}.sidebar{display:none}.topbar{display:flex}main{padding:22px 16px 48px}.banner{height:200px}#map{height:460px}}
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true"></div>
+<div class="topo" aria-hidden="true">
+  <svg viewBox="0 0 720 480" preserveAspectRatio="xMidYMid slice">
+    <path d="M-20,80 C150,30 320,130 480,90 S720,30 760,110"/><path d="M-20,180 C150,130 330,230 500,190 S720,130 760,210"/>
+    <path d="M-20,280 C160,220 340,330 520,290 S720,220 760,310"/><path d="M-20,390 C170,330 350,440 540,400 S720,320 760,420"/>
+    <path d="M560,120 m-64,0 a64,44 0 1,0 128,0 a64,44 0 1,0 -128,0"/><path d="M560,120 m-40,0 a40,28 0 1,0 80,0 a40,28 0 1,0 -80,0"/>
+    <path class="lake" d="M150,330 C150,300 185,288 215,295 C250,303 268,322 262,348 C257,372 225,388 193,379 C163,371 150,358 150,330 Z"/>
+    <path class="river" d="M261,338 C300,330 330,302 360,272 C393,238 432,226 472,212 C512,198 548,205 588,196"/>
+    <text class="peak" x="548" y="124">▲ 402 m</text><text class="wlabel" x="196" y="338">168 m</text>
+  </svg>
+</div>
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo" href="index.html"><span class="badge"><i class="ti ti-mountain"></i></span><div><div class="t1">YGTAR 2026</div><div class="t2">Natural Selection AR</div></div></a>
+    <a class="navitem" href="index.html"><i class="ti ti-home"></i>Home</a>
+    <a class="navitem" href="register.html"><i class="ti ti-user-plus"></i>Register</a>
+    <div class="navitem active"><i class="ti ti-flag-2"></i>Control points</div>
+    <a class="navitem" href="submit-proof.html"><i class="ti ti-camera"></i>Submit proof</a>
+    <div class="navsec">Community</div>
+    <a class="navitem" href="gallery.html"><i class="ti ti-photo"></i>Adventure photos</a>
+    <a class="navitem" href="sponsors.html"><i class="ti ti-star"></i>Sponsors</a>
+    <a class="navitem" href="swag.html"><i class="ti ti-shirt"></i>Swag store</a>
+    <div class="navsec admin-only" style="display:none">Admin</div>
+    <a class="navitem admin-only" href="admin-email.html" style="display:none"><i class="ti ti-mail"></i>Email campaigns</a>
+    <a class="navitem admin-only" href="admin-cp.html" style="display:none"><i class="ti ti-flag-cog"></i>CP management</a>
+    <div class="host-card"><div class="h1">Hosted by</div><div class="h2">Natural Selection AR</div><div class="h3">info@naturalselectionar.com</div></div>
+  </aside>
+  <div class="topbar"><a class="logo" href="index.html" style="border:none;padding:0;margin:0"><span class="badge" style="width:34px;height:34px;font-size:18px"><i class="ti ti-mountain"></i></span><div><div class="t1">YGTAR 2026</div></div></a></div>
+
+  <main>
+    <div class="banner"><div class="bg"></div><div class="veil"></div><img class="fg" src="logo.jpg" alt="You Got This Adventure Race"></div>
+    <div class="page-head"><div><h1>Control points</h1><p>Every live CP across the province — filter by discipline.</p></div></div>
+
+    <div class="filters" id="filters">
+      <div class="fchip all on" data-f="all" onclick="setFilter('all',this)"><i class="ti ti-stack-2"></i>All</div>
+      <div class="fchip Hiking" data-f="Hiking" onclick="setFilter('Hiking',this)"><span class="dot" style="background:var(--hike)"></span>Hiking</div>
+      <div class="fchip Biking" data-f="Biking" onclick="setFilter('Biking',this)"><span class="dot" style="background:var(--bike)"></span>Biking</div>
+      <div class="fchip Paddling" data-f="Paddling" onclick="setFilter('Paddling',this)"><span class="dot" style="background:var(--paddle)"></span>Paddling</div>
+    </div>
+
+    <div class="mapwrap">
+      <div class="map-note" id="mapNote">No control points placed yet — they'll appear here as racers claim them.</div>
+      <div id="map"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const COLORS = { Hiking:'#1D9E75', Biking:'#E0892C', Paddling:'#3E84B8', Sponsored:'#178060', Other:'#5c6b62' };
+  const ICONS  = { Hiking:'ti-walk', Biking:'ti-bike', Paddling:'ti-kayak', Sponsored:'ti-star', Other:'ti-flag' };
+  let map, allCps = [], layer, filter = 'all';
+
+  function pinIcon(disc){
+    const color = COLORS[disc] || COLORS.Other;
+    return L.divIcon({
+      className:'', iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-26],
+      html:'<div class="marker-pin" style="background:'+color+'"><i class="ti '+(ICONS[disc]||'ti-flag')+'"></i></div>'
+    });
+  }
+  function popupHtml(c){
+    const color = COLORS[c.discipline]||COLORS.Other;
+    let p=''; for(let i=1;i<=5;i++){ p+='<span class="pip" style="'+(c.difficulty&&i<=c.difficulty?('background:'+color):'')+'"></span>'; }
+    const labels={1:'Family friendly',2:'Easy',3:'Moderate',4:'Hard',5:'Expert'};
+    return '<div class="pop"><h4>'+c.name+'</h4><div class="meta">'+c.discipline+(c.location?(' · '+c.location):'')+'</div>'+
+      (c.difficulty?('<div class="drow">Difficulty: <span class="pips">'+p+'</span> '+(labels[c.difficulty]||'')+'</div>'):'')+'</div>';
+  }
+
+  function draw(){
+    if(layer) layer.remove();
+    layer = L.layerGroup().addTo(map);
+    const shown = allCps.filter(c => c.status==='Live' && c.lat!=null && c.lng!=null && (filter==='all'||c.discipline===filter));
+    shown.forEach(c => L.marker([c.lat,c.lng],{icon:pinIcon(c.discipline)}).bindPopup(popupHtml(c)).addTo(layer));
+    document.getElementById('mapNote').style.display = shown.length ? 'none' : 'block';
+    if(shown.length){
+      const b = L.latLngBounds(shown.map(c=>[c.lat,c.lng]));
+      map.fitBounds(b.pad(0.25), { maxZoom:13 });
+    }
+  }
+  function setFilter(f, el){
+    filter = f;
+    document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'));
+    el.classList.add('on'); draw();
+  }
+
+  function initMap(){
+    map = L.map('map', { scrollWheelZoom:false }).setView([46.5, -66.5], 7); // New Brunswick
+    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxZoom:17,
+      attribution:'Map data: &copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)'
+    }).addTo(map);
+    map.on('click', ()=> map.scrollWheelZoom.enable());
+  }
+
+  async function load(){
+    initMap();
+    try{
+      const { cps } = await (await fetch('/api/cps')).json();
+      allCps = cps || [];
+    }catch(e){ allCps = []; }
+    draw();
+  }
+  load();
+</script>
+<script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
+</body>
+</html>
