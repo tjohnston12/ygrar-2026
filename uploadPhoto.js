@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Register · You Got This Adventure Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --color-background-primary:#ffffff;--color-background-secondary:#f5f8f6;--color-background-tertiary:#eaf0ec;
+    --color-text-primary:#16201b;--color-text-secondary:#3f4d44;--color-text-tertiary:#6a786f;
+    --color-border-secondary:rgba(22,32,27,.14);--color-border-tertiary:rgba(22,32,27,.08);
+    --radius-lg:16px;--radius-md:11px;--radius-pill:999px;
+    --green:#1D9E75;--green-dark:#178060;--green-soft:#E6F5EF;
+    --hike:#1D9E75;--bike:#E0892C;--paddle:#3E84B8;--danger:#c0492f;
+    --font-sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+
+  /* topo background */
+  .scene{position:fixed;inset:0;z-index:0;pointer-events:none;background:url("action-bg.jpg") center center/cover no-repeat;filter:blur(7px) saturate(1.05);transform:scale(1.06)}
+  .scene::after{content:"";position:absolute;inset:0;background:rgba(245,248,246,.68)}
+  .topo{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.8}
+  .topo svg{width:100%;height:100%;display:block}
+  .topo path{fill:none;stroke:var(--green);stroke-width:1.4;opacity:.2}
+  .topo .faint{opacity:.11}
+  .topo .lake{fill:var(--paddle);fill-opacity:.12;stroke:var(--paddle);stroke-opacity:.45;stroke-width:1.4;opacity:1}
+  .topo .depth{fill:var(--paddle);fill-opacity:.10;stroke:var(--paddle);stroke-opacity:.35;stroke-width:1.1;opacity:1}
+  .topo .river{stroke:var(--paddle);stroke-opacity:.5;stroke-width:2.2;fill:none;opacity:1}
+  .topo text{fill:var(--green);font-family:var(--font-sans);font-size:9px;font-weight:600;opacity:.3;letter-spacing:.03em}
+  .topo .peak{font-size:9.5px;opacity:.42}
+  .topo .wlabel{fill:var(--paddle);opacity:.55}
+
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh;position:relative;z-index:1}
+
+  /* sidebar */
+  .sidebar{background:var(--color-background-primary);border-right:1px solid var(--color-border-tertiary);padding:22px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .logo{display:flex;align-items:center;gap:11px;padding:0 22px 20px;border-bottom:1px solid var(--color-border-tertiary);margin-bottom:14px}
+  .logo .badge{width:40px;height:40px;border-radius:11px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .logo .t1{font-size:14px;font-weight:700;line-height:1.2}
+  .logo .t2{font-size:11px;color:var(--color-text-tertiary);margin-top:1px}
+  .navsec{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--color-text-tertiary);padding:14px 22px 7px}
+  .navitem{display:flex;align-items:center;gap:12px;padding:10px 22px;font-size:14px;font-weight:500;color:var(--color-text-secondary);cursor:pointer;border-left:3px solid transparent;transition:background .15s,color .15s}
+  .navitem i{font-size:19px}
+  .navitem:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+  .navitem.active{color:var(--green);border-left-color:var(--green);background:var(--green-soft)}
+  .host-card{margin:auto 16px 0;padding:13px 15px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md)}
+  .host-card .h1{font-size:10.5px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.07em}
+  .host-card .h2{font-size:13px;font-weight:600;margin-top:3px}
+  .host-card .h3{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+
+  .topbar{display:none;align-items:center;justify-content:space-between;background:var(--color-background-primary);border-bottom:1px solid var(--color-border-tertiary);padding:14px 18px;position:sticky;top:0;z-index:20}
+
+  main{padding:34px 40px 60px;width:100%;max-width:760px;margin:0 auto}
+  .page-head h1{font-size:28px;font-weight:800;letter-spacing:-.02em}
+  .page-head p{color:var(--color-text-secondary);font-size:16.5px;margin-top:5px}
+
+  /* hero banner — same as home */
+  .banner{position:relative;height:300px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--color-border-tertiary);margin-bottom:22px;background:var(--color-background-tertiary)}
+  .banner .bg{position:absolute;inset:0;background:url("logo.jpg") center center/cover no-repeat;filter:blur(22px) saturate(1.08);transform:scale(1.25)}
+  .banner .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(38,52,33,.14))}
+  .banner img.fg{position:relative;z-index:2;display:block;height:100%;width:100%;object-fit:contain;margin:0 auto}
+  .logo-hero{display:block;width:100%;height:auto;margin:0 0 22px;border-radius:var(--radius-lg)}
+  @media(max-width:860px){ .banner{height:200px} }
+
+  /* step progress */
+  .steps{display:flex;gap:6px;margin:24px 0;flex-wrap:wrap}
+  .step{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--color-text-tertiary);padding:5px 4px}
+  .step .dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:var(--color-background-tertiary);color:var(--color-text-tertiary)}
+  .step.active{color:var(--green)}
+  .step.active .dot{background:var(--green);color:#fff}
+  .step.done .dot{background:var(--green-soft);color:var(--green)}
+
+  .card{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:28px}
+  .wstep{display:none}
+  .wstep.on{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .wstep h2{font-size:20px;font-weight:700;margin-bottom:4px}
+  .wstep .lead{color:var(--color-text-secondary);font-size:14.5px;margin-bottom:20px}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px}
+  .field input,.field select{width:100%;font:inherit;font-size:15px;padding:11px 13px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .choice{border:1.5px solid var(--color-border-secondary);border-radius:var(--radius-md);padding:22px;text-align:center;cursor:pointer;transition:.15s}
+  .choice:hover{border-color:var(--green)}
+  .choice.sel{border-color:var(--green);background:var(--green-soft)}
+  .choice i{font-size:30px;color:var(--green)}
+  .choice h3{font-size:16px;font-weight:700;margin:10px 0 4px}
+  .choice p{font-size:13px;color:var(--color-text-secondary)}
+
+  .drop{border:1.5px dashed var(--color-border-secondary);border-radius:var(--radius-md);padding:24px;text-align:center;cursor:pointer;color:var(--color-text-secondary);font-size:14px;transition:.15s}
+  .drop:hover{border-color:var(--green)}
+  .drop.has{border-style:solid;border-color:var(--green);color:var(--green);font-weight:600}
+  .drop i{font-size:24px;display:block;margin-bottom:7px}
+  .thumb{max-height:120px;border-radius:var(--radius-md);margin-top:12px}
+
+  .waiver{height:210px;overflow-y:auto;border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md);padding:16px;font-size:13.5px;color:var(--color-text-secondary);background:var(--color-background-secondary);line-height:1.6}
+  .waiver h4{color:var(--color-text-primary);font-size:14px;margin-bottom:8px}
+  .waiver p{margin-bottom:10px}
+  .scrollhint{font-size:12.5px;color:var(--color-text-tertiary);margin-top:8px;text-align:center}
+  .agree{display:flex;align-items:flex-start;gap:10px;margin-top:16px;font-size:14px;color:var(--color-text-secondary)}
+  .agree input{width:auto;margin-top:3px}
+  .agree.dim{opacity:.45;pointer-events:none}
+
+  .info-box{background:var(--green-soft);border:1px solid rgba(29,158,117,.25);border-radius:var(--radius-md);padding:14px 16px;font-size:13.5px;color:var(--color-text-secondary);margin-bottom:18px}
+  .info-box b{color:var(--green-dark)}
+
+  .summary{border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md);overflow:hidden;margin-bottom:18px}
+  .srow{display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--color-border-tertiary);font-size:14px}
+  .srow:last-child{border-bottom:none}
+  .srow span:first-child{color:var(--color-text-tertiary)}
+  .srow span:last-child{font-weight:600}
+  .total{display:flex;justify-content:space-between;align-items:center;background:var(--green-soft);border:1px solid rgba(29,158,117,.25);border-radius:var(--radius-md);padding:16px 18px;margin-bottom:18px}
+  .total .lbl{font-size:13px;color:var(--color-text-secondary)}
+  .total .amt{font-size:26px;font-weight:800;color:var(--green-dark)}
+
+  .wiz-foot{display:flex;justify-content:space-between;align-items:center;margin-top:24px}
+  .btn{display:inline-flex;align-items:center;gap:7px;background:var(--green);color:#fff;font-weight:600;font-size:15px;padding:11px 24px;border-radius:var(--radius-pill);border:none;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--green-dark);transform:translateY(-1px)}
+  .btn.dim{opacity:.45;pointer-events:none}
+  .btn-ghost{background:transparent;color:var(--color-text-secondary);border:1px solid var(--color-border-secondary);font-weight:600;font-size:15px;padding:11px 22px;border-radius:var(--radius-pill);cursor:pointer}
+  .btn-ghost.hide{visibility:hidden}
+  .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
+  .status{margin-top:14px;font-size:14px;color:var(--color-text-secondary)}
+
+  @media(max-width:860px){
+    .app{grid-template-columns:1fr}.sidebar{display:none}.topbar{display:flex}
+    main{padding:22px 16px 48px}.choices{grid-template-columns:1fr}.row2{grid-template-columns:1fr}
+    .step span{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true"></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo" href="index.html">
+      <span class="badge"><i class="ti ti-mountain"></i></span>
+      <div><div class="t1">YGTAR 2026</div><div class="t2">Natural Selection AR</div></div>
+    </a>
+    <a class="navitem" href="index.html"><i class="ti ti-home"></i>Home</a>
+    <div class="navitem active"><i class="ti ti-user-plus"></i>Register</div>
+    <a class="navitem" href="control-points.html"><i class="ti ti-flag-2"></i>Control points</a>
+    <a class="navitem" href="submit-proof.html"><i class="ti ti-camera"></i>Submit proof</a>
+    <div class="navsec">Community</div>
+    <a class="navitem" href="gallery.html"><i class="ti ti-photo"></i>Adventure photos</a>
+    <a class="navitem" href="sponsors.html"><i class="ti ti-star"></i>Sponsors</a>
+    <a class="navitem" href="swag.html"><i class="ti ti-shirt"></i>Swag store</a>
+    <div class="navsec admin-only" style="display:none">Admin</div>
+    <a class="navitem admin-only" href="admin-email.html" style="display:none"><i class="ti ti-mail"></i>Email campaigns</a>
+    <a class="navitem admin-only" href="admin-cp.html" style="display:none"><i class="ti ti-flag-cog"></i>CP management</a>
+    <div class="host-card">
+      <div class="h1">Hosted by</div><div class="h2">Natural Selection AR</div><div class="h3">info@naturalselectionar.com</div>
+    </div>
+  </aside>
+
+  <div class="topbar">
+    <a class="logo" href="index.html" style="border:none;padding:0;margin:0">
+      <span class="badge" style="width:34px;height:34px;font-size:18px"><i class="ti ti-mountain"></i></span>
+      <div><div class="t1">YGTAR 2026</div></div>
+    </a>
+  </div>
+
+  <main>
+    <img class="logo-hero" src="logo.jpg" alt="You Got This Adventure Race">
+    <div class="page-head">
+      <h1>Register for YGTAR 2026</h1>
+      <p>Join the You Got This Adventure Race — $5 per racer.</p>
+    </div>
+
+    <div class="steps" id="steps">
+      <div class="step active"><span class="dot">1</span><span>Type</span></div>
+      <div class="step"><span class="dot">2</span><span>Details</span></div>
+      <div class="step"><span class="dot">3</span><span>Emergency</span></div>
+      <div class="step"><span class="dot">4</span><span>Waiver</span></div>
+      <div class="step"><span class="dot">5</span><span>SPCA</span></div>
+      <div class="step"><span class="dot">6</span><span>Pay</span></div>
+    </div>
+
+    <div class="card">
+      <!-- STEP 1 — type -->
+      <div class="wstep on" data-step="0">
+        <h2>How are you racing?</h2>
+        <p class="lead">Solo, or as a team captain paying for your whole crew in one go.</p>
+        <div class="choices">
+          <div class="choice sel" id="ch-solo" onclick="pickType('solo')">
+            <i class="ti ti-user"></i><h3>Solo</h3><p>Just you against the trail.</p>
+          </div>
+          <div class="choice" id="ch-team" onclick="pickType('team')">
+            <i class="ti ti-users"></i><h3>Team</h3><p>Captain registers & pays for all.</p>
+          </div>
+        </div>
+        <div id="team-fields" style="display:none;margin-top:18px">
+          <div class="field"><label>Team name</label><input id="teamName" placeholder="e.g. Trail Blazers"></div>
+          <div class="field"><label>How many racers total (including you)?</label>
+            <input id="qty" type="number" min="1" max="12" value="2"></div>
+        </div>
+      </div>
+
+      <!-- STEP 2 — details -->
+      <div class="wstep" data-step="1">
+        <h2>Your details</h2>
+        <p class="lead">This is the account you'll log in with.</p>
+        <div class="field"><label>Full name</label><input id="fullName" placeholder="Jamie Doe"></div>
+        <div class="row2">
+          <div class="field"><label>Email</label><input id="email" type="email" placeholder="you@email.com"></div>
+          <div class="field"><label>Phone</label><input id="phone" type="tel" placeholder="(506) 555-0123"></div>
+        </div>
+        <div class="field"><label>Password</label><input id="password" type="password" placeholder="At least 8 characters"></div>
+        <div class="field"><label>Profile photo <span style="color:var(--color-text-tertiary);font-weight:400">(optional)</span></label>
+          <div class="drop" id="drop-profile" onclick="document.getElementById('file-profile').click()">
+            <i class="ti ti-camera-plus"></i>Tap to upload a photo
+          </div>
+          <input id="file-profile" type="file" accept="image/*" hidden>
+          <img id="thumb-profile" class="thumb" style="display:none">
+        </div>
+      </div>
+
+      <!-- STEP 3 — emergency -->
+      <div class="wstep" data-step="2">
+        <h2>Emergency contact</h2>
+        <p class="lead">Someone we can reach if needed out on course.</p>
+        <div class="field"><label>Contact name</label><input id="emName" placeholder="Alex Doe"></div>
+        <div class="field"><label>Contact phone</label><input id="emPhone" type="tel" placeholder="(506) 555-0199"></div>
+      </div>
+
+      <!-- STEP 4 — waiver -->
+      <div class="wstep" data-step="3">
+        <h2>Waiver &amp; release</h2>
+        <p class="lead">Please read to the bottom, then sign by typing your name.</p>
+        <div class="waiver" id="waiver">
+          <h4>You Got This Adventure Race — Participant Waiver &amp; Release of Liability</h4>
+          <p>In consideration of being permitted to participate in the You Got This Adventure Race (the "Event") organized by Natural Selection Adventure Racing, I acknowledge and agree to the following:</p>
+          <p><b>1. Assumption of risk.</b> Adventure racing involves hiking, mountain biking, paddling and travel through remote, natural terrain. These activities carry inherent risks including falls, collisions, drowning, exposure, wildlife encounters, equipment failure, and serious injury or death. I voluntarily assume all such risks.</p>
+          <p><b>2. Personal responsibility.</b> I confirm I am physically fit to participate, will supply my own appropriate equipment and safety gear, and will obey all event rules, local laws, and organizer instructions.</p>
+          <p><b>3. Release.</b> I release and hold harmless Natural Selection Adventure Racing, its organizers, volunteers, sponsors and landowners from any and all claims arising from my participation, to the fullest extent permitted by law.</p>
+          <p><b>4. Media.</b> I grant permission for photos and footage of me taken during the Event to be used for promotional purposes.</p>
+          <p><b>5. Emergency care.</b> I consent to receive emergency medical treatment if required and accept responsibility for any associated costs.</p>
+          <p>By typing my name below and checking the box, I confirm I have read, understood and agree to this waiver.</p>
+        </div>
+        <div class="scrollhint" id="scrollhint">↓ Scroll to the bottom to continue</div>
+        <div class="field" style="margin-top:14px"><label>Type your full name to sign</label><input id="sign" placeholder="Jamie Doe"></div>
+        <label class="agree dim" id="agreeWrap"><input type="checkbox" id="agree"> I have read and agree to the waiver above.</label>
+      </div>
+
+      <!-- STEP 5 — SPCA -->
+      <div class="wstep" data-step="4">
+        <h2>SPCA donation</h2>
+        <p class="lead">Entry includes a donation to your local SPCA — any amount you choose.</p>
+        <div class="info-box">Donate any amount to the <b>SPCA</b>, then upload your receipt here. We review receipts within <b>24 hours</b>. Your registration is confirmed once payment and receipt are both in.</div>
+        <div class="field"><label>Donation receipt</label>
+          <div class="drop" id="drop-receipt" onclick="document.getElementById('file-receipt').click()">
+            <i class="ti ti-receipt"></i>Tap to upload your SPCA receipt
+          </div>
+          <input id="file-receipt" type="file" accept="image/*,application/pdf" hidden>
+          <img id="thumb-receipt" class="thumb" style="display:none">
+        </div>
+      </div>
+
+      <!-- STEP 6 — review/pay -->
+      <div class="wstep" data-step="5">
+        <h2>Review &amp; pay</h2>
+        <p class="lead">One secure Stripe payment finishes your entry.</p>
+        <div class="summary" id="summary"></div>
+        <div class="total">
+          <div><div class="lbl">Total due</div><div style="font-size:12px;color:var(--color-text-tertiary)" id="priceBreak"></div></div>
+          <div class="amt" id="amt">$5.00</div>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="err" id="err"></div>
+      <div class="wiz-foot">
+        <button class="btn-ghost hide" id="backBtn" onclick="back()">Back</button>
+        <button class="btn" id="nextBtn" onclick="next()">Continue</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const PRICE = 5; // dollars per racer
+  let step = 0;
+  const data = { type:'Solo', quantity:1, profileFile:null, receiptFile:null };
+
+  // ---- type selection ----
+  function pickType(t){
+    data.type = (t==='team') ? 'Team captain' : 'Solo';
+    document.getElementById('ch-solo').classList.toggle('sel', t==='solo');
+    document.getElementById('ch-team').classList.toggle('sel', t==='team');
+    document.getElementById('team-fields').style.display = (t==='team') ? 'block' : 'none';
+  }
+
+  // ---- file uploads (preview only here; uploaded to Cloudinary on pay) ----
+  function wireDrop(fileId, dropId, thumbId, key){
+    const input = document.getElementById(fileId);
+    input.addEventListener('change', () => {
+      const f = input.files[0]; if(!f) return;
+      data[key] = f;
+      const drop = document.getElementById(dropId);
+      drop.classList.add('has'); drop.innerHTML = '<i class="ti ti-check"></i>'+f.name;
+      if(f.type.startsWith('image/')){
+        const t = document.getElementById(thumbId);
+        t.src = URL.createObjectURL(f); t.style.display='block';
+      }
+    });
+  }
+  wireDrop('file-profile','drop-profile','thumb-profile','profileFile');
+  wireDrop('file-receipt','drop-receipt','thumb-receipt','receiptFile');
+
+  // ---- waiver scroll-to-enable ----
+  const waiver = document.getElementById('waiver');
+  function checkWaiverScroll(){
+    if(waiver.scrollTop + waiver.clientHeight >= waiver.scrollHeight - 10){
+      document.getElementById('agreeWrap').classList.remove('dim');
+      document.getElementById('scrollhint').style.display='none';
+    }
+  }
+  waiver.addEventListener('scroll', checkWaiverScroll);
+
+  // ---- step machine ----
+  const stepsEls = () => [...document.querySelectorAll('.step')];
+  function render(){
+    document.querySelectorAll('.wstep').forEach(s => s.classList.toggle('on', +s.dataset.step===step));
+    stepsEls().forEach((el,i)=>{ el.classList.toggle('active',i===step); el.classList.toggle('done',i<step); });
+    document.getElementById('backBtn').classList.toggle('hide', step===0);
+    const isLast = step===5;
+    document.getElementById('nextBtn').innerHTML = isLast ? ('Pay $'+(PRICE*data.quantity).toFixed(2)+' & Register') : 'Continue';
+    document.getElementById('err').textContent='';
+    if(step===3) checkWaiverScroll();
+    if(step===5) buildSummary();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function fail(msg){ document.getElementById('err').textContent = msg; return false; }
+
+  function validate(){
+    if(step===0){
+      if(data.type==='Team captain'){
+        data.teamName = document.getElementById('teamName').value.trim();
+        data.quantity = Math.max(1, parseInt(document.getElementById('qty').value||'1',10));
+        if(!data.teamName) return fail('Please enter a team name.');
+      } else { data.quantity = 1; }
+      return true;
+    }
+    if(step===1){
+      data.fullName=document.getElementById('fullName').value.trim();
+      data.email=document.getElementById('email').value.trim();
+      data.phone=document.getElementById('phone').value.trim();
+      data.password=document.getElementById('password').value;
+      if(!data.fullName) return fail('Please enter your name.');
+      if(!/.+@.+\..+/.test(data.email)) return fail('Please enter a valid email.');
+      if(data.password.length<8) return fail('Password must be at least 8 characters.');
+      return true;
+    }
+    if(step===2){
+      data.emName=document.getElementById('emName').value.trim();
+      data.emPhone=document.getElementById('emPhone').value.trim();
+      if(!data.emName||!data.emPhone) return fail('Please add an emergency contact.');
+      return true;
+    }
+    if(step===3){
+      data.waiverName=document.getElementById('sign').value.trim();
+      if(!data.waiverName) return fail('Type your name to sign the waiver.');
+      if(!document.getElementById('agree').checked) return fail('Please read and agree to the waiver.');
+      return true;
+    }
+    if(step===4){
+      if(!data.receiptFile) return fail('Please upload your SPCA donation receipt.');
+      return true;
+    }
+    return true;
+  }
+
+  function next(){
+    if(step===5){ submit(); return; }
+    if(!validate()) return;
+    step++; render();
+  }
+  function back(){ if(step>0){ step--; render(); } }
+
+  function buildSummary(){
+    const rows = [
+      ['Racer', data.fullName||'—'],
+      ['Email', data.email||'—'],
+      ['Entry', data.type==='Team captain' ? ('Team — '+data.teamName+' ('+data.quantity+' racers)') : 'Solo'],
+      ['Emergency contact', (data.emName||'—')],
+      ['Waiver', data.waiverName ? ('Signed by '+data.waiverName) : '—'],
+      ['SPCA receipt', data.receiptFile ? 'Uploaded ✓' : '—'],
+    ];
+    document.getElementById('summary').innerHTML = rows.map(r=>'<div class="srow"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
+    document.getElementById('amt').textContent = '$'+(PRICE*data.quantity).toFixed(2);
+    document.getElementById('priceBreak').textContent = '$'+PRICE.toFixed(2)+' × '+data.quantity+' racer'+(data.quantity>1?'s':'');
+  }
+
+  // ---- Cloudinary upload (no GPS needed for profile/receipt) ----
+  async function uploadFile(file){
+    const sign = await fetch('/api/cloudinary-sign',{method:'POST'}).then(r=>r.json());
+    const form = new FormData();
+    form.append('file',file);
+    form.append('api_key',sign.apiKey);
+    form.append('timestamp',sign.timestamp);
+    form.append('signature',sign.signature);
+    form.append('folder',sign.folder);
+    const res = await fetch('https://api.cloudinary.com/v1_1/'+sign.cloudName+'/image/upload',{method:'POST',body:form});
+    const out = await res.json();
+    if(out.error) throw new Error(out.error.message);
+    return out.secure_url;
+  }
+
+  // ---- final submit: upload -> register -> checkout ----
+  async function submit(){
+    const btn = document.getElementById('nextBtn');
+    const status = document.getElementById('status');
+    btn.classList.add('dim'); status.textContent = 'Uploading your photos…';
+    try{
+      const spcaReceiptUrl = await uploadFile(data.receiptFile);
+      const profilePhotoUrl = data.profileFile ? await uploadFile(data.profileFile) : '';
+
+      status.textContent = 'Creating your account…';
+      const reg = await fetch('/api/register',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          fullName:data.fullName, email:data.email, password:data.password, phone:data.phone,
+          type:data.type, teamName:data.teamName||'', emergencyName:data.emName, emergencyPhone:data.emPhone,
+          profilePhotoUrl, spcaReceiptUrl, waiverName:data.waiverName
+        })
+      });
+      const regData = await reg.json();
+      if(!reg.ok) throw new Error(regData.error || 'Registration failed');
+
+      status.textContent = 'Redirecting to secure payment…';
+      const co = await fetch('/api/stripe-checkout',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          kind:'registration', racerId:regData.racer.id, quantity:data.quantity,
+          successUrl: location.origin+'/?paid=1', cancelUrl: location.href
+        })
+      });
+      const coData = await co.json();
+      if(!co.ok || !coData.url) throw new Error(coData.error || 'Could not start checkout');
+      window.location.href = coData.url;
+    }catch(e){
+      status.textContent='';
+      document.getElementById('err').textContent = e.message + ' — (this completes once the app is deployed live).';
+      btn.classList.remove('dim');
+    }
+  }
+
+  render();
+</script>
+<script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
+</body>
+</html>
