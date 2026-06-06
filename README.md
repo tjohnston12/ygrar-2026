@@ -113,7 +113,30 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Status [Single select: New / Printing / Shipped]
    - Ordered at [Date]
 
-   (Add **Teams**, **Sponsors**, **Email Campaigns** later as you need them.)
+   **Comments** (gallery photo comments)
+   - Photo [Link → Photos]
+   - Photo ID [Single line text]
+   - Racer name [Single line text]
+   - Racer ID [Single line text]
+   - Text [Long text]
+   - Posted at [Date]
+
+   **Votes** (photo of the week — one per racer per week)
+   - Photo [Link → Photos]
+   - Photo ID [Single line text]
+   - Racer ID [Single line text]
+   - Week [Single line text]
+
+   **Sponsors**
+   - Name [Single line text]
+   - Tier [Single select: Title / Gold / Silver / Community]
+   - Logo URL [Single line text]
+   - Website [URL]
+   - Blurb [Long text]
+   - Active [Checkbox]
+
+   Also add one field to the **Racers** table:
+   - Is admin [Checkbox]  — check this for organizer accounts; it gates the admin pages and endpoints.
 
 ### 3. Cloudinary — photo hosting
 You already use this in your employee app, so reuse that account.
