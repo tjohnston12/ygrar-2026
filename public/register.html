@@ -96,6 +96,11 @@
   .choice i{font-size:30px;color:var(--green)}
   .choice h3{font-size:16px;font-weight:700;margin:10px 0 4px}
   .choice p{font-size:13px;color:var(--color-text-secondary)}
+  .citychips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .citychip{border:1.5px solid var(--color-border-secondary);border-radius:var(--radius-pill);padding:8px 15px;font-size:14px;font-weight:600;color:var(--color-text-secondary);cursor:pointer;transition:.15s}
+  .citychip:hover{border-color:var(--green)}
+  .citychip.sel{background:var(--green-soft);border-color:var(--green);color:var(--green-dark)}
+  .muted{color:var(--color-text-tertiary);font-size:14px}
 
   .drop{border:1.5px dashed var(--color-border-secondary);border-radius:var(--radius-md);padding:24px;text-align:center;cursor:pointer;color:var(--color-text-secondary);font-size:14px;transition:.15s}
   .drop:hover{border-color:var(--green)}
@@ -175,7 +180,7 @@
     <img class="logo-hero" src="logo.jpg" alt="You Got This Adventure Race">
     <div class="page-head">
       <h1>Register for YGTAR 2026</h1>
-      <p>Join the You Got This Adventure Race — $5 per racer.</p>
+      <p>Join the You Got This Adventure Race — $20 per racer, plus $5 per city.</p>
     </div>
 
     <div class="steps" id="steps">
@@ -204,6 +209,10 @@
           <div class="field"><label>Team name</label><input id="teamName" placeholder="e.g. Trail Blazers"></div>
           <div class="field"><label>How many racers total (including you)?</label>
             <input id="qty" type="number" min="1" max="12" value="2"></div>
+        </div>
+        <div class="field" style="margin-top:18px">
+          <label>Which cities are you competing in? <span style="color:var(--color-text-tertiary);font-weight:400">($5 each, per racer)</span></label>
+          <div id="cityList" class="citychips"><span class="muted">Loading cities…</span></div>
         </div>
       </div>
 
@@ -289,9 +298,11 @@
 </div>
 
 <script>
-  const PRICE = 5; // dollars per racer
+  const BASE = 20, CITY = 5; // $ base per racer, $ per city per racer
+  function perRacer(){ return BASE + CITY*data.cities.length; }
+  function total(){ return data.quantity * perRacer(); }
   let step = 0;
-  const data = { type:'Solo', quantity:1, profileFile:null, receiptFile:null };
+  const data = { type:'Solo', quantity:1, cities:[], profileFile:null, receiptFile:null };
 
   // ---- type selection ----
   function pickType(t){
@@ -335,7 +346,7 @@
     stepsEls().forEach((el,i)=>{ el.classList.toggle('active',i===step); el.classList.toggle('done',i<step); });
     document.getElementById('backBtn').classList.toggle('hide', step===0);
     const isLast = step===5;
-    document.getElementById('nextBtn').innerHTML = isLast ? ('Pay $'+(PRICE*data.quantity).toFixed(2)+' & Register') : 'Continue';
+    document.getElementById('nextBtn').innerHTML = isLast ? ('Pay $'+total().toFixed(2)+' & Register') : 'Continue';
     document.getElementById('err').textContent='';
     if(step===3) checkWaiverScroll();
     if(step===5) buildSummary();
@@ -350,6 +361,7 @@
         data.quantity = Math.max(1, parseInt(document.getElementById('qty').value||'1',10));
         if(!data.teamName) return fail('Please enter a team name.');
       } else { data.quantity = 1; }
+      if(!data.cities.length) return fail('Please choose at least one city to compete in.');
       return true;
     }
     if(step===1){
@@ -393,13 +405,14 @@
       ['Racer', data.fullName||'—'],
       ['Email', data.email||'—'],
       ['Entry', data.type==='Team captain' ? ('Team — '+data.teamName+' ('+data.quantity+' racers)') : 'Solo'],
+      ['Cities', data.cities.length ? data.cities.join(', ') : '—'],
       ['Emergency contact', (data.emName||'—')],
       ['Waiver', data.waiverName ? ('Signed by '+data.waiverName) : '—'],
       ['SPCA receipt', data.receiptFile ? 'Uploaded ✓' : '—'],
     ];
     document.getElementById('summary').innerHTML = rows.map(r=>'<div class="srow"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
-    document.getElementById('amt').textContent = '$'+(PRICE*data.quantity).toFixed(2);
-    document.getElementById('priceBreak').textContent = '$'+PRICE.toFixed(2)+' × '+data.quantity+' racer'+(data.quantity>1?'s':'');
+    document.getElementById('amt').textContent = '$'+total().toFixed(2);
+    document.getElementById('priceBreak').textContent = '$'+BASE+' + $'+CITY+'×'+data.cities.length+' city'+(data.cities.length===1?'':'ies')+' per racer × '+data.quantity+' racer'+(data.quantity>1?'s':'');
   }
 
   // ---- Cloudinary upload (no GPS needed for profile/receipt) ----
@@ -432,7 +445,7 @@
         body: JSON.stringify({
           fullName:data.fullName, email:data.email, password:data.password, phone:data.phone,
           type:data.type, teamName:data.teamName||'', emergencyName:data.emName, emergencyPhone:data.emPhone,
-          profilePhotoUrl, spcaReceiptUrl, waiverName:data.waiverName
+          profilePhotoUrl, spcaReceiptUrl, waiverName:data.waiverName, cities:data.cities
         })
       });
       const regData = await reg.json();
@@ -442,7 +455,7 @@
       const co = await fetch('/api/stripe-checkout',{
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          kind:'registration', racerId:regData.racer.id, quantity:data.quantity,
+          kind:'registration', racerId:regData.racer.id, quantity:data.quantity, cityCount:data.cities.length,
           successUrl: location.origin+'/?paid=1', cancelUrl: location.href
         })
       });
@@ -456,6 +469,22 @@
     }
   }
 
+  async function loadCities(){
+    const box=document.getElementById('cityList');
+    try{
+      const { cities } = await (await fetch('/api/cities')).json();
+      if(!cities||!cities.length){ box.innerHTML='<span class="muted">No cities configured yet — add them in Airtable.</span>'; return; }
+      box.innerHTML = cities.map(c=>'<span class="citychip" data-name="'+c.name.replace(/"/g,'&quot;')+'" onclick="toggleCity(this)">'+c.name+'</span>').join('');
+    }catch(e){ box.innerHTML='<span class="muted">Cities load once the app is live.</span>'; }
+  }
+  function toggleCity(el){
+    const name=el.dataset.name;
+    el.classList.toggle('sel');
+    const i=data.cities.indexOf(name);
+    if(i>=0) data.cities.splice(i,1); else data.cities.push(name);
+  }
+
+  loadCities();
   render();
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>

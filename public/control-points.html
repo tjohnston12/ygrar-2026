@@ -59,6 +59,7 @@
   .fchip.on{color:#fff;border-color:transparent}
   .fchip.all.on{background:var(--green-dark)}
   .fchip.Hiking.on{background:var(--hike)}.fchip.Biking.on{background:var(--bike)}.fchip.Paddling.on{background:var(--paddle)}
+  .cpcity{margin-left:auto;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--color-text-secondary);border:1px solid var(--color-border-secondary);border-radius:var(--radius-pill);padding:7px 14px;background:var(--color-background-primary);cursor:pointer}
   .mapwrap{position:relative;border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);overflow:hidden}
   #map{height:600px;width:100%;background:var(--color-background-tertiary)}
   .map-note{position:absolute;z-index:500;top:14px;left:50%;transform:translateX(-50%);background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-pill);padding:8px 18px;font-size:13px;color:var(--color-text-secondary);box-shadow:0 4px 14px rgba(0,0,0,.06);display:none}
@@ -96,13 +97,14 @@
 
   <main>
     <img class="logo-hero" src="logo.jpg" alt="You Got This Adventure Race">
-    <div class="page-head"><div><h1>Control points</h1><p>Every live CP across the province — filter by discipline.</p></div></div>
+    <div class="page-head"><div><h1>Control points</h1><p>Every live CP across the province — filter by discipline and city.</p></div></div>
 
     <div class="filters" id="filters">
       <div class="fchip all on" data-f="all" onclick="setFilter('all',this)"><i class="ti ti-stack-2"></i>All</div>
       <div class="fchip Hiking" data-f="Hiking" onclick="setFilter('Hiking',this)"><span class="dot" style="background:var(--hike)"></span>Hiking</div>
       <div class="fchip Biking" data-f="Biking" onclick="setFilter('Biking',this)"><span class="dot" style="background:var(--bike)"></span>Biking</div>
       <div class="fchip Paddling" data-f="Paddling" onclick="setFilter('Paddling',this)"><span class="dot" style="background:var(--paddle)"></span>Paddling</div>
+      <select id="cp-city" class="cpcity" onchange="setCity(this.value)"><option value="">All cities</option></select>
     </div>
 
     <div class="mapwrap">
@@ -115,7 +117,7 @@
 <script>
   const COLORS = { Hiking:'#1D9E75', Biking:'#E0892C', Paddling:'#3E84B8', Sponsored:'#178060', Other:'#5c6b62' };
   const ICONS  = { Hiking:'ti-walk', Biking:'ti-bike', Paddling:'ti-kayak', Sponsored:'ti-star', Other:'ti-flag' };
-  let map, allCps = [], layer, filter = 'all';
+  let map, allCps = [], layer, filter = 'all', cityFilter = '';
 
   function pinIcon(disc){
     const color = COLORS[disc] || COLORS.Other;
@@ -128,14 +130,14 @@
     const color = COLORS[c.discipline]||COLORS.Other;
     let p=''; for(let i=1;i<=5;i++){ p+='<span class="pip" style="'+(c.difficulty&&i<=c.difficulty?('background:'+color):'')+'"></span>'; }
     const labels={1:'Family friendly',2:'Easy',3:'Moderate',4:'Hard',5:'Expert'};
-    return '<div class="pop"><h4>'+c.name+'</h4><div class="meta">'+c.discipline+(c.location?(' · '+c.location):'')+'</div>'+
+    return '<div class="pop"><h4>'+c.name+'</h4><div class="meta">'+c.discipline+(c.city?(' · '+c.city):'')+(c.location?(' · '+c.location):'')+'</div>'+
       (c.difficulty?('<div class="drow">Difficulty: <span class="pips">'+p+'</span> '+(labels[c.difficulty]||'')+'</div>'):'')+'</div>';
   }
 
   function draw(){
     if(layer) layer.remove();
     layer = L.layerGroup().addTo(map);
-    const shown = allCps.filter(c => c.status==='Live' && c.lat!=null && c.lng!=null && (filter==='all'||c.discipline===filter));
+    const shown = allCps.filter(c => c.status==='Live' && c.lat!=null && c.lng!=null && (filter==='all'||c.discipline===filter) && (cityFilter===''||c.city===cityFilter));
     shown.forEach(c => L.marker([c.lat,c.lng],{icon:pinIcon(c.discipline)}).bindPopup(popupHtml(c)).addTo(layer));
     document.getElementById('mapNote').style.display = shown.length ? 'none' : 'block';
     if(shown.length){
@@ -148,6 +150,7 @@
     document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'));
     el.classList.add('on'); draw();
   }
+  function setCity(v){ cityFilter = v; draw(); }
 
   function initMap(){
     map = L.map('map', { scrollWheelZoom:false }).setView([46.5, -66.5], 7); // New Brunswick
@@ -164,6 +167,11 @@
       const { cps } = await (await fetch('/api/cps')).json();
       allCps = cps || [];
     }catch(e){ allCps = []; }
+    // populate city dropdown from cities present on CPs
+    const sel=document.getElementById('cp-city');
+    [...new Set(allCps.map(c=>c.city).filter(Boolean))].sort().forEach(name=>{
+      const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o);
+    });
     draw();
   }
   load();

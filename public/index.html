@@ -113,6 +113,7 @@
   .sec-head h2{font-size:19px;font-weight:700}
   .sec-head .note{font-size:13px;color:var(--color-text-tertiary)}
 
+  .lb-city{font-family:inherit;font-size:13px;font-weight:600;color:var(--color-text-secondary);border:1px solid var(--color-border-secondary);border-radius:var(--radius-pill);padding:6px 12px;background:var(--color-background-primary);cursor:pointer}
   .board{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);
     border-radius:var(--radius-lg);overflow:hidden}
   .lrow{display:grid;grid-template-columns:46px 1fr 58px 58px 58px 64px;align-items:center;
@@ -209,7 +210,10 @@
 
     <div class="sec-head" id="leaderboard">
       <h2>Leaderboard</h2>
-      <span class="note">1 point per verified control point · live</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="note">1 point per verified CP · live</span>
+        <select id="lb-city" class="lb-city" onchange="loadBoard()"><option value="">All cities</option></select>
+      </div>
     </div>
     <div class="board" id="board">
       <div class="lrow lhead">
@@ -258,12 +262,16 @@
 
   async function loadBoard(){
     const board = document.getElementById('board');
-    const msg = document.getElementById('board-msg');
+    board.querySelectorAll('.entry').forEach(e=>e.remove());
+    let msg = document.getElementById('board-msg');
+    if(!msg){ msg=document.createElement('div'); msg.className='bmsg'; msg.id='board-msg'; board.appendChild(msg); }
+    msg.textContent='Loading standings…';
+    const city = document.getElementById('lb-city').value;
     try{
-      const res = await fetch('/api/leaderboard');
+      const res = await fetch('/api/leaderboard'+(city?('?city='+encodeURIComponent(city)):''));
       const data = await res.json();
       const standings = data.standings || [];
-      if(!standings.length){ msg.textContent = 'No control points claimed yet — be the first when the season opens!'; return; }
+      if(!standings.length){ msg.textContent = city ? ('No control points claimed in '+city+' yet.') : 'No control points claimed yet — be the first when the season opens!'; return; }
       msg.remove();
       standings.slice(0,10).forEach((s,i)=>{
         const r = document.createElement('div');
@@ -279,6 +287,14 @@
       });
     }catch(e){ msg.textContent = 'Leaderboard will appear here once the app is live.'; }
   }
+  async function loadLbCities(){
+    try{
+      const { cities } = await (await fetch('/api/cities')).json();
+      const sel=document.getElementById('lb-city');
+      (cities||[]).forEach(c=>{ const o=document.createElement('option'); o.value=c.name; o.textContent=c.name; sel.appendChild(o); });
+    }catch(e){}
+  }
+  loadLbCities();
   loadBoard();
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>

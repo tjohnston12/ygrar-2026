@@ -141,6 +141,7 @@
           <div class="field"><label>Difficulty</label><select id="f-diff"><option value="">—</option><option value="1">1 · Family friendly</option><option value="2">2 · Easy</option><option value="3">3 · Moderate</option><option value="4">4 · Hard</option><option value="5">5 · Expert</option></select></div>
           <div class="field"><label>Chain #</label><input id="f-chain" type="number" min="1" placeholder="1"></div>
           <div class="field"><label>Status</label><select id="f-status"><option>Live</option><option>Pending</option></select></div>
+          <div class="field"><label>City</label><select id="f-city"><option value="">—</option></select></div>
         </div>
         <div style="display:flex;align-items:center;gap:14px;margin-top:16px">
           <button class="btn" id="addBtn" onclick="addCp()"><i class="ti ti-plus"></i>Add control point</button>
@@ -177,6 +178,7 @@
       <div class="field"><label>Latitude</label><input id="e-lat"></div>
       <div class="field"><label>Longitude</label><input id="e-lng"></div>
     </div>
+    <div class="field" style="margin:12px 0"><label>City</label><select id="e-city"><option value="">—</option></select></div>
     <div class="mfoot"><button class="btn-ghost" onclick="closeEdit()">Cancel</button><button class="btn" id="saveBtn" onclick="saveEdit()">Save changes</button></div>
   </div>
 </div>
@@ -219,7 +221,7 @@
       return '<div class="cprow'+(c.status==='Removed'?' removed':'')+'">'+
         '<div class="cpic" style="background:color-mix(in srgb,var('+v+') 14%,white);color:var('+v+')"><i class="ti '+(ICON[c.discipline]||'ti-flag')+'"></i></div>'+
         '<div><div class="cpname">'+c.name+statusBadge(c.status)+'</div>'+
-          '<div class="cpmeta">'+c.discipline+(c.chain?(' · chain #'+c.chain):'')+(c.location?(' · '+c.location):'')+
+          '<div class="cpmeta">'+c.discipline+(c.city?(' · '+c.city):'')+(c.chain?(' · chain #'+c.chain):'')+(c.location?(' · '+c.location):'')+
           (c.lat!=null?(' · '+Number(c.lat).toFixed(4)+', '+Number(c.lng).toFixed(4)):'')+' · '+diffLabel(c.difficulty)+'</div></div>'+
         '<div class="ctrls">'+
           '<select title="Difficulty" onchange="quick(\''+c.id+'\',\'difficulty\',this.value)"><option value="">D—</option>'+diffOpts+'</select>'+
@@ -242,7 +244,8 @@
     const fields={ name:document.getElementById('f-name').value.trim(), discipline:document.getElementById('f-disc').value,
       lat:document.getElementById('f-lat').value.trim(), lng:document.getElementById('f-lng').value.trim(),
       location:document.getElementById('f-loc').value.trim(), difficulty:document.getElementById('f-diff').value,
-      chain:document.getElementById('f-chain').value, status:document.getElementById('f-status').value };
+      chain:document.getElementById('f-chain').value, status:document.getElementById('f-status').value,
+      city:document.getElementById('f-city').value };
     if(!fields.name||!fields.lat||!fields.lng){ st.className='status bad'; st.textContent='Name, latitude and longitude are required.'; return; }
     btn.classList.add('dim');
     try{
@@ -264,6 +267,7 @@
     document.getElementById('e-loc').value=c.location||'';
     document.getElementById('e-lat').value=c.lat!=null?c.lat:'';
     document.getElementById('e-lng').value=c.lng!=null?c.lng:'';
+    document.getElementById('e-city').value=c.city||'';
     document.getElementById('editOverlay').classList.add('on');
   }
   function closeEdit(){ document.getElementById('editOverlay').classList.remove('on'); }
@@ -271,7 +275,8 @@
     const id=document.getElementById('e-id').value;
     const fields={ name:document.getElementById('e-name').value.trim(), discipline:document.getElementById('e-disc').value,
       chain:document.getElementById('e-chain').value, location:document.getElementById('e-loc').value.trim(),
-      lat:document.getElementById('e-lat').value.trim(), lng:document.getElementById('e-lng').value.trim() };
+      lat:document.getElementById('e-lat').value.trim(), lng:document.getElementById('e-lng').value.trim(),
+      city:document.getElementById('e-city').value };
     const btn=document.getElementById('saveBtn'); btn.classList.add('dim');
     try{
       const res=await fetch('/api/cp-manage',{method:'POST',headers:authHdr(),body:JSON.stringify({action:'update',id,fields})});
@@ -282,9 +287,18 @@
   }
   document.getElementById('editOverlay').addEventListener('click',e=>{ if(e.target.id==='editOverlay') closeEdit(); });
 
+  async function loadCities(){
+    try{
+      const { cities } = await (await fetch('/api/cities')).json();
+      const opts=(cities||[]).map(c=>'<option value="'+c.name.replace(/"/g,'&quot;')+'">'+c.name+'</option>').join('');
+      document.getElementById('f-city').insertAdjacentHTML('beforeend',opts);
+      document.getElementById('e-city').insertAdjacentHTML('beforeend',opts);
+    }catch(e){}
+  }
+
   // init
   if(!token() || !racer().isAdmin){ document.getElementById('gate').style.display='block'; document.getElementById('panel').style.display='none'; }
-  else { load(); }
+  else { loadCities(); load(); }
 </script>
 </body>
 </html>
