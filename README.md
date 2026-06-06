@@ -83,6 +83,7 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Difficulty [Number] (1–5, set by the racer who places it)
    - Placed by [Link → Racers]
    - Last verified at [Date]
+   - City [Single line text]  (match the city Name; scopes the leaderboard and map)
 
    **Proof Submissions**
    - Racer [Link → Racers]
@@ -135,8 +136,13 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Blurb [Long text]
    - Active [Checkbox]
 
-   Also add one field to the **Racers** table:
+   **Cities** (series cities racers can enter — $5 each per racer)
+   - Name [Single line text]
+   - Active [Checkbox]
+
+   Also add these fields to the **Racers** table:
    - Is admin [Checkbox]  — check this for organizer accounts; it gates the admin pages and endpoints.
+   - Cities [Single line text]  — the cities a racer registered for (saved at registration).
 
 ### 3. Cloudinary — photo hosting
 You already use this in your employee app, so reuse that account.
