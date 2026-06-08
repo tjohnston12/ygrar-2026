@@ -231,7 +231,7 @@
       return '<div class="cprow'+(c.status==='Removed'?' removed':'')+'">'+
         '<div class="cpic" style="background:color-mix(in srgb,var('+v+') 14%,white);color:var('+v+')"><i class="ti '+(ICON[c.discipline]||'ti-flag')+'"></i></div>'+
         '<div><div class="cpname">'+c.name+statusBadge(c.status)+(c.familyFriendly?'<span class="badge" style="background:var(--green-soft);color:var(--green-dark)">Family</span>':'')+(c.flagged?'<span class="badge" style="background:#f7e0db;color:var(--danger)">⚑ Flagged'+(c.flagCount>1?(' ×'+c.flagCount):'')+'</span>':'')+'</div>'+
-          '<div class="cpmeta">'+c.discipline+(c.city?(' · '+c.city):'')+(c.chain?(' · chain #'+c.chain):'')+(c.location?(' · '+c.location):'')+
+          '<div class="cpmeta">'+c.discipline+(c.city?(' · '+c.city):'')+(c.chain?(' · chain #'+c.chain):'')+(c.placedByTeam?(' · by '+c.placedByTeam):'')+(c.location?(' · '+c.location):'')+
           (c.lat!=null?(' · '+Number(c.lat).toFixed(4)+', '+Number(c.lng).toFixed(4)):'')+' · '+diffLabel(c.difficulty)+'</div></div>'+
         '<div class="ctrls">'+
           (c.flagged?'<button class="iconbtn" title="Clear flag" onclick="clearFlag(\''+c.id+'\')" style="color:var(--danger);border-color:var(--danger)"><i class="ti ti-flag-off"></i></button>':'')+

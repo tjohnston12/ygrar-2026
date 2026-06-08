@@ -130,8 +130,13 @@
     <!-- place the next CP (revealed after a verified submission) -->
     <div id="placePanel" style="display:none;margin-top:18px;border:1px solid rgba(29,158,117,.3);background:var(--green-soft);border-radius:var(--radius-md);padding:18px">
       <h3 style="font-size:17px;color:var(--green-dark);margin-bottom:4px">Place the next control point</h3>
-      <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:14px">You earned it! Set the next point in this chain — it goes live right away for other racers to chase. Keep it legal, reachable, and safe.</p>
+      <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:14px">You earned the right to set the next point in this chain. Add a photo of the spot and the details below — it'll show as <b>pending</b> under your team name until the organizer approves it. Keep it legal, reachable, and safe. Not up for it? You can pass it to the next racer.</p>
       <div class="field"><label>Name</label><input id="pl-name" placeholder="e.g. Riverside Lookout"></div>
+      <div class="field"><label>Photo of the location</label>
+        <div class="drop" id="pl-drop" onclick="document.getElementById('pl-file').click()" style="margin-top:4px"><i class="ti ti-camera"></i>Tap to add a photo of the spot</div>
+        <input id="pl-file" type="file" accept="image/*" hidden>
+        <img id="pl-thumb" class="thumb" style="display:none">
+      </div>
       <div class="field"><label>Location description</label><input id="pl-loc" placeholder="e.g. End of the boardwalk, by the big pine"></div>
       <div class="field"><label>Coordinates</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -144,7 +149,10 @@
         <select id="pl-diff"><option value="1">1 — Easy</option><option value="2">2</option><option value="3" selected>3 — Moderate</option><option value="4">4</option><option value="5">5 — Tough</option></select>
       </div>
       <label style="display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer;margin-bottom:12px"><input type="checkbox" id="pl-family" style="width:17px;height:17px;accent-color:var(--green)"> Family-friendly (easy &amp; kid-appropriate)</label>
-      <button class="btn" id="pl-submit" onclick="placeNextCp()"><i class="ti ti-map-pin-plus"></i>Place control point</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="pl-submit" onclick="placeNextCp()"><i class="ti ti-map-pin-plus"></i>Place control point</button>
+        <button class="btn-ghost" id="pl-decline" onclick="declinePlacement()" type="button"><i class="ti ti-player-skip-forward"></i>Pass to next racer</button>
+      </div>
       <div class="result" id="pl-result"></div>
     </div>
   </main>
@@ -225,25 +233,44 @@
     );
   }
 
+  const placeState = { file:null };
+  document.addEventListener('DOMContentLoaded', ()=>{
+    var f=document.getElementById('pl-file');
+    if(f) f.addEventListener('change', ()=>{
+      var file=f.files[0]; if(!file) return; placeState.file=file;
+      var d=document.getElementById('pl-drop'); d.classList.add('has'); d.innerHTML='<i class="ti ti-check"></i>'+file.name;
+      var t=document.getElementById('pl-thumb'); t.src=URL.createObjectURL(file); t.style.display='block';
+    });
+  });
+
+  function declinePlacement(){
+    document.getElementById('placePanel').style.display='none';
+    var r=document.getElementById('result');
+    r.className='result win'; r.style.display='block';
+    r.innerHTML='<h3>Passed on 👍</h3><p>No problem — this point is left open for the next racer to place. Your verified visit still counts.</p>';
+  }
+
   async function placeNextCp(){
     const btn=document.getElementById('pl-submit'); const out=document.getElementById('pl-result');
     const name=document.getElementById('pl-name').value.trim();
     const lat=document.getElementById('pl-lat').value.trim();
     const lng=document.getElementById('pl-lng').value.trim();
     if(!name||!lat||!lng){ out.className='result lose'; out.style.display='block'; out.innerHTML='<p>Please add a name and coordinates.</p>'; return; }
+    if(!placeState.file){ out.className='result lose'; out.style.display='block'; out.innerHTML='<p>Please add a photo of the location.</p>'; return; }
     btn.classList.add('dim');
     try{
+      const photoUrl = await uploadFile(placeState.file);
       const res=await fetch('/api/cp-place',{
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
         body:JSON.stringify({ proofId:state.proofId, name, location:document.getElementById('pl-loc').value.trim(),
           latitude:parseFloat(lat), longitude:parseFloat(lng), difficulty:document.getElementById('pl-diff').value,
-          familyFriendly:document.getElementById('pl-family').checked })
+          familyFriendly:document.getElementById('pl-family').checked, photoUrl })
       });
       const data=await res.json();
       if(!res.ok) throw new Error(data.error||'Could not place the point');
       out.className='result win'; out.style.display='block';
-      out.innerHTML='<h3>It\'s live! 🚩</h3><p>Your control point is now on the map for everyone to chase. Nicely done.</p>';
-      btn.style.display='none';
+      out.innerHTML='<h3>Submitted! 🚩</h3><p>Your control point is on the map as <b>pending</b> under your team name. Once the organizer approves it, it goes live for everyone to chase.</p>';
+      btn.style.display='none'; document.getElementById('pl-decline').style.display='none';
     }catch(e){ out.className='result lose'; out.style.display='block'; out.innerHTML='<p>'+e.message+'</p>'; btn.classList.remove('dim'); }
   }
 

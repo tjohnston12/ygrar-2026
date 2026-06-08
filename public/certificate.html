@@ -98,7 +98,15 @@
       : 'took on the trails, the water and the climb across New Brunswick. Endurance · Navigation · Teamwork.';
     document.getElementById('blurb').textContent = team ? (base+' Proudly racing with '+team+'.') : base;
   }
-  render();
+  (function(){
+    var end=new Date('2026-10-01T00:00:00-03:00'); // race concludes Sept 30, 2026 (Atlantic)
+    if(new Date() < end){
+      document.querySelector('.controls').innerHTML='<h1>Certificates open after the race</h1><p>Finisher certificates will be available here once the Your Choice Adventure Race wraps up on <b>September 30, 2026</b>. Check back then to print yours!</p>';
+      var cert=document.getElementById('cert'); if(cert) cert.style.display='none';
+      return;
+    }
+    render();
+  })();
 </script>
 </body>
 </html>
