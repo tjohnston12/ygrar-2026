@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rules · Your Choice Adventure Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --color-background-primary:#ffffff;--color-background-secondary:#f5f8f6;--color-background-tertiary:#eaf0ec;
+    --color-text-primary:#16201b;--color-text-secondary:#3f4d44;--color-text-tertiary:#6a786f;
+    --color-border-secondary:rgba(22,32,27,.14);--color-border-tertiary:rgba(22,32,27,.08);
+    --radius-lg:16px;--radius-md:11px;--radius-pill:999px;
+    --green:#1D9E75;--green-dark:#178060;--green-soft:#E6F5EF;--hike:#1D9E75;--bike:#E0892C;--paddle:#3E84B8;--gold:#C9A23B;
+    --font-sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .scene{position:fixed;inset:0;z-index:0;pointer-events:none;background:url("action-bg.jpg") center center/cover no-repeat;filter:blur(7px) saturate(1.05);transform:scale(1.06)}
+  .scene::after{content:"";position:absolute;inset:0;background:rgba(245,248,246,.68)}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh;position:relative;z-index:1}
+  .sidebar{background:var(--color-background-primary);border-right:1px solid var(--color-border-tertiary);padding:22px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .logo{display:flex;align-items:center;gap:11px;padding:0 22px 20px;border-bottom:1px solid var(--color-border-tertiary);margin-bottom:14px}
+  .logo .badge{width:40px;height:40px;border-radius:11px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .logo .t1{font-size:14px;font-weight:700;line-height:1.2}.logo .t2{font-size:11px;color:var(--color-text-tertiary);margin-top:1px}
+  .navsec{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--color-text-tertiary);padding:14px 22px 7px}
+  .navitem{display:flex;align-items:center;gap:12px;padding:10px 22px;font-size:14px;font-weight:500;color:var(--color-text-secondary);cursor:pointer;border-left:3px solid transparent;transition:.15s}
+  .navitem i{font-size:19px}.navitem:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+  .navitem.active{color:var(--green);border-left-color:var(--green);background:var(--green-soft)}
+  .host-card{margin:auto 16px 0;padding:13px 15px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md)}
+  .host-card .h1{font-size:10.5px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.07em}
+  .host-card .h2{font-size:13px;font-weight:600;margin-top:3px}.host-card .h3{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+  .topbar{display:none;align-items:center;justify-content:space-between;background:var(--color-background-primary);border-bottom:1px solid var(--color-border-tertiary);padding:14px 18px;position:sticky;top:0;z-index:20}
+  main{padding:34px 40px 60px;max-width:880px;margin:0 auto}
+  .logo-hero{display:block;width:100%;height:auto;margin:0 0 22px;border-radius:var(--radius-lg)}
+  .page-head h1{font-size:28px;font-weight:800;letter-spacing:-.02em}.page-head p{color:var(--color-text-secondary);font-size:16.5px;margin-top:5px}
+
+  .card{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:22px 24px;margin-top:16px}
+  .card h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .card h2 i{color:var(--green);font-size:21px}
+  .card p{font-size:15.5px;color:var(--color-text-secondary);margin-top:9px}
+  .card ul{margin:9px 0 0 2px;padding:0;list-style:none}
+  .card li{font-size:15.5px;color:var(--color-text-secondary);padding:5px 0 5px 24px;position:relative}
+  .card li:before{content:"";position:absolute;left:3px;top:13px;width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .card b{color:var(--color-text-primary)}
+  .disc{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .dpill{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:14px;padding:7px 14px;border-radius:var(--radius-pill);color:#fff}
+  .updated{color:var(--color-text-tertiary);font-size:13.5px;margin-top:18px}
+  @media(max-width:860px){.app{grid-template-columns:1fr}.sidebar{display:none}.topbar{display:flex}main{padding:22px 16px 48px}}
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true"></div>
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo" href="index.html"><span class="badge"><i class="ti ti-mountain"></i></span><div><div class="t1">YCAR 2026</div><div class="t2">Natural Selection AR</div></div></a>
+    <a class="navitem" href="index.html"><i class="ti ti-home"></i>Home</a>
+    <a class="navitem" href="register.html"><i class="ti ti-user-plus"></i>Register</a>
+    <a class="navitem" href="control-points.html"><i class="ti ti-flag-2"></i>Control points</a>
+    <a class="navitem" href="submit-proof.html"><i class="ti ti-camera"></i>Submit proof</a>
+    <div class="navitem active"><i class="ti ti-clipboard-list"></i>Rules</div>
+    <div class="navsec">Community</div>
+    <a class="navitem" href="gallery.html"><i class="ti ti-photo"></i>Adventure photos</a>
+    <a class="navitem" href="roster.html"><i class="ti ti-users-group"></i>Teams &amp; families</a>
+    <a class="navitem" href="sponsors.html"><i class="ti ti-star"></i>Sponsors</a>
+    <a class="navitem" href="swag.html"><i class="ti ti-shirt"></i>Swag store</a>
+    <div class="host-card"><div class="h1">Hosted by</div><div class="h2">Natural Selection AR</div><div class="h3">info@naturalselectionar.com</div></div>
+  </aside>
+  <div class="topbar"><a class="logo" href="index.html" style="border:none;padding:0;margin:0"><span class="badge" style="width:34px;height:34px;font-size:18px"><i class="ti ti-mountain"></i></span><div><div class="t1">YCAR 2026</div></div></a></div>
+
+  <main>
+    <img class="logo-hero" src="logo.jpg" alt="Your Choice Adventure Race">
+    <div class="page-head"><h1>Race rules</h1><p>Everything you need to know to race fair, stay safe, and have a blast all summer long.</p></div>
+
+    <div class="card">
+      <h2><i class="ti ti-route"></i>The format</h2>
+      <p>The Your Choice Adventure Race is a summer-long, choose-your-own-adventure race across New Brunswick, running <b>June 13 to September 30, 2026</b>. There's no single start gun — you race on your own schedule, in the cities you choose, across three disciplines:</p>
+      <div class="disc">
+        <span class="dpill" style="background:var(--hike)"><i class="ti ti-hiking"></i>Hiking</span>
+        <span class="dpill" style="background:var(--bike)"><i class="ti ti-bike"></i>Biking</span>
+        <span class="dpill" style="background:var(--paddle)"><i class="ti ti-kayak"></i>Paddling</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-flag-2"></i>Control points &amp; the chain</h2>
+      <p>This is what makes the race different: the course is built by the racers. Each discipline has a growing <b>chain</b> of control points (CPs). We seed the very first CP in each discipline — from there, the racers take over.</p>
+      <ul>
+        <li>The <b>first racer</b> to reach a live CP and submit verified proof <b>claims</b> that point.</li>
+        <li>Claiming a CP earns you the right to <b>place the next CP</b> in that discipline's chain.</li>
+        <li>So every point you claim adds a new challenge for the racers behind you.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-camera-check"></i>Claiming a control point</h2>
+      <ul>
+        <li>Travel to a <b>live</b> control point under your own power, in the matching discipline.</li>
+        <li>Take a photo at the location with your phone's <b>location/GPS enabled</b> — the photo's embedded location is what verifies you were there.</li>
+        <li>Submit it through the app. Once it's verified, the point is yours and counts toward your standings.</li>
+        <li>First verified submission wins the point. Be quick — others are chasing the same CP.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-map-pin-plus"></i>Placing the next control point</h2>
+      <p>When you claim a CP, you may set the next one in that chain. Please play fair so the course stays great for everyone:</p>
+      <ul>
+        <li>Choose a spot on <b>legal, publicly accessible</b> land or water — never private property or anywhere unsafe.</li>
+        <li>Make it genuinely reachable in that discipline (a paddling CP on the water, a biking CP on rideable terrain).</li>
+        <li>Add a clear location description and rate the <b>difficulty from 1 to 5</b>.</li>
+        <li>Consider marking easier points <b>family-friendly</b> — families can filter the map for these.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-trophy"></i>Scoring &amp; standings</h2>
+      <ul>
+        <li>Every verified control point earns you <b>one point</b>.</li>
+        <li>The leaderboard updates as points are verified, and can be viewed <b>per city</b> or <b>overall</b>.</li>
+        <li>Race in as many cities as you like across the season — your results carry through the series.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-user-plus"></i>Registration &amp; fees</h2>
+      <ul>
+        <li><b>$20 per adult</b>, which includes your first city.</li>
+        <li><b>$5 per additional city</b> you'd like to race.</li>
+        <li><b>Youth under 16 race for just $5</b> — we love seeing families out there.</li>
+        <li>Registration includes making a <b>donation to the SPCA</b> and uploading your receipt — a small way to give back.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-shield-check"></i>Eligibility &amp; youth</h2>
+      <ul>
+        <li>Open to all ages and skill levels.</li>
+        <li>Racers <b>under 16</b> must be registered by a parent or legal guardian, who signs the waiver on their behalf and accompanies them on course.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-heart-handshake"></i>Safety &amp; conduct</h2>
+      <ul>
+        <li>The race is <b>self-supported</b> — know your limits, check the weather, and turn back when conditions call for it.</li>
+        <li>Wear the right safety gear: a <b>helmet</b> for biking and a <b>PFD</b> for paddling.</li>
+        <li>Stay on legal trails and waterways, respect private property, and follow <b>Leave No Trace</b>.</li>
+        <li>Be courteous — yield to others and share the trail.</li>
+        <li><b>We don't track racers by GPS.</b> Your location is only ever captured in the proof photos you choose to submit.</li>
+        <li>Race honestly. Falsifying proof, faking a CP, or misrepresenting age results in disqualification.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-photo"></i>Photos &amp; community</h2>
+      <ul>
+        <li>Share your best shots in the <b>gallery</b> — photos are reviewed before going live.</li>
+        <li>Vote for <b>Photo of the Week</b> with the crown; a fresh vote opens every Monday.</li>
+        <li>Kids' photos can earn a <b>Junior Explorer</b> badge.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-star"></i>Sponsored control points</h2>
+      <p>Some control points are placed by our sponsors and marked with a gold star. They're claimed the same way as any other CP and may carry a little something extra.</p>
+    </div>
+
+    <div class="card">
+      <h2><i class="ti ti-alert-triangle"></i>Risk &amp; waiver</h2>
+      <p>Adventure racing involves inherent risks. Every racer (or their guardian) agrees to the waiver at registration and takes part at their own risk. Natural Selection Adventure Racing reserves the right to adjust these rules, remove a control point, or disqualify any entry to keep the race safe and fair. Questions? Reach us at <b>info@naturalselectionar.com</b>.</p>
+    </div>
+
+    <p class="updated">Your Choice Adventure Race 2026 · Hosted by Natural Selection Adventure Racing</p>
+  </main>
+</div>
+<script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
+</body>
+</html>
