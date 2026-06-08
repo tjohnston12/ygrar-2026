@@ -88,6 +88,8 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Flagged [Checkbox]  (set when a racer flags the point for review)
    - Flag count [Number]  (how many racers have flagged it)
    - Flag reason [Long text]  (log of flag reasons)
+   - Placed by team [Single line text]  (team/racer name shown on racer-placed points)
+   - Photo URL [Single line text]  (location photo attached when a racer places a point)
 
    **Proof Submissions**
    - Racer [Link → Racers]
