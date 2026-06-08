@@ -85,6 +85,9 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Last verified at [Date]
    - City [Single line text]  (match the city Name; scopes the leaderboard and map)
    - Family friendly [Checkbox]  (shows a Family badge + powers the family filter on the map)
+   - Flagged [Checkbox]  (set when a racer flags the point for review)
+   - Flag count [Number]  (how many racers have flagged it)
+   - Flag reason [Long text]  (log of flag reasons)
 
    **Proof Submissions**
    - Racer [Link → Racers]
