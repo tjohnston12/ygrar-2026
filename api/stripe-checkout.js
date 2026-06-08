@@ -14,29 +14,32 @@ export default async function handler(req, res) {
   let metadata = { kind, racerId: racerId || '' };
 
   if (kind === 'registration') {
-    // Team captains pay for everyone in one transaction -> quantity = number of racers.
-    const qty = Math.max(1, parseInt(quantity || '1', 10));
+    // Family-friendly: adults $20 (first city incl.), youth under 16 $5 (first city incl.),
+    // and $5 per ADDITIONAL city for everyone. Captain pays for all in one transaction.
+    const adults = Math.max(0, parseInt(req.body.adults != null ? req.body.adults : (quantity || 1), 10) || 0);
+    const kids = Math.max(0, parseInt(req.body.kids || '0', 10) || 0);
+    const total = Math.max(1, adults + kids);
     const cityCount = Math.max(0, parseInt(req.body.cityCount || '0', 10));
-    line_items = [{
-      price_data: {
-        currency: 'cad',
-        product_data: { name: 'YCAR 2026 Registration' },
-        unit_amount: parseInt(process.env.REGISTRATION_PRICE_CENTS || '2000', 10),
-      },
-      quantity: qty,
-    }];
-    // $5 per city, per racer
-    if (cityCount > 0) {
-      line_items.push({
-        price_data: {
-          currency: 'cad',
-          product_data: { name: `City series fee (${cityCount} ${cityCount === 1 ? 'city' : 'cities'})` },
-          unit_amount: parseInt(process.env.CITY_PRICE_CENTS || '500', 10),
-        },
-        quantity: qty * cityCount,
-      });
-    }
-    metadata.racerCount = String(qty);
+    const extra = Math.max(0, cityCount - 1);
+    line_items = [];
+    if (adults > 0) line_items.push({
+      price_data: { currency: 'cad', product_data: { name: 'YCAR 2026 — Adult registration' },
+        unit_amount: parseInt(process.env.REGISTRATION_PRICE_CENTS || '2000', 10) },
+      quantity: adults,
+    });
+    if (kids > 0) line_items.push({
+      price_data: { currency: 'cad', product_data: { name: 'YCAR 2026 — Youth registration (under 16)' },
+        unit_amount: parseInt(process.env.YOUTH_PRICE_CENTS || '500', 10) },
+      quantity: kids,
+    });
+    if (extra > 0) line_items.push({
+      price_data: { currency: 'cad', product_data: { name: `Additional city fee (${extra} extra ${extra === 1 ? 'city' : 'cities'})` },
+        unit_amount: parseInt(process.env.CITY_PRICE_CENTS || '500', 10) },
+      quantity: total * extra,
+    });
+    metadata.racerCount = String(total);
+    metadata.adults = String(adults);
+    metadata.kids = String(kids);
     metadata.cityCount = String(cityCount);
   } else if (kind === 'swag') {
     // items: [{ name, amountCents, quantity }]

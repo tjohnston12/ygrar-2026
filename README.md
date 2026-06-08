@@ -143,6 +143,7 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    Also add these fields to the **Racers** table:
    - Is admin [Checkbox]  — check this for organizer accounts; it gates the admin pages and endpoints.
    - Cities [Single line text]  — the cities a racer registered for (saved at registration).
+   - Guardian consent [Checkbox]  — true when a parent/guardian signed the waiver for a youth (under 16) entry.
 
 ### 3. Cloudinary — photo hosting
 You already use this in your employee app, so reuse that account.

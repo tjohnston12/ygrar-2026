@@ -100,6 +100,8 @@
   .citychip{border:1.5px solid var(--color-border-secondary);border-radius:var(--radius-pill);padding:8px 15px;font-size:14px;font-weight:600;color:var(--color-text-secondary);cursor:pointer;transition:.15s}
   .citychip:hover{border-color:var(--green)}
   .citychip.sel{background:var(--green-soft);border-color:var(--green);color:var(--green-dark)}
+  .ckline{display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer}
+  .ckline input{width:17px;height:17px;accent-color:var(--green)}
   .muted{color:var(--color-text-tertiary);font-size:14px}
 
   .drop{border:1.5px dashed var(--color-border-secondary);border-radius:var(--radius-md);padding:24px;text-align:center;cursor:pointer;color:var(--color-text-secondary);font-size:14px;transition:.15s}
@@ -180,7 +182,7 @@
     <img class="logo-hero" src="logo.jpg" alt="Your Choice Adventure Race">
     <div class="page-head">
       <h1>Register for YCAR 2026</h1>
-      <p>Join the Your Choice Adventure Race — $20 per racer, plus $5 per city.</p>
+      <p>Join the Your Choice Adventure Race — $20 per adult (first city included), $5 per extra city. Youth under 16 race for just $5.</p>
     </div>
 
     <div class="steps" id="steps">
@@ -205,13 +207,18 @@
             <i class="ti ti-users"></i><h3>Team</h3><p>Captain registers & pays for all.</p>
           </div>
         </div>
+        <div id="solo-fields" style="margin-top:18px">
+          <label class="ckline"><input type="checkbox" id="soloYouth"> I'm racing youth — under 16 (youth rate, $5)</label>
+        </div>
         <div id="team-fields" style="display:none;margin-top:18px">
           <div class="field"><label>Team name</label><input id="teamName" placeholder="e.g. Trail Blazers"></div>
-          <div class="field"><label>How many racers total (including you)?</label>
-            <input id="qty" type="number" min="1" max="12" value="2"></div>
+          <div class="row2">
+            <div class="field"><label>Adults (16+, including you)</label><input id="qtyAdult" type="number" min="0" max="12" value="2"></div>
+            <div class="field"><label>Youth (under 16)</label><input id="qtyKid" type="number" min="0" max="12" value="0"></div>
+          </div>
         </div>
         <div class="field" style="margin-top:18px">
-          <label>Which cities are you competing in? <span style="color:var(--color-text-tertiary);font-weight:400">($5 each, per racer)</span></label>
+          <label>Which cities are you competing in? <span style="color:var(--color-text-tertiary);font-weight:400">(first city included, $5 each extra)</span></label>
           <div id="cityList" class="citychips"><span class="muted">Loading cities…</span></div>
         </div>
       </div>
@@ -258,8 +265,12 @@
           <p>By typing my name below and checking the box, I confirm I have read, understood and agree to this waiver.</p>
         </div>
         <div class="scrollhint" id="scrollhint">↓ Scroll to the bottom to continue</div>
-        <div class="field" style="margin-top:14px"><label>Type your full name to sign</label><input id="sign" placeholder="Jamie Doe"></div>
+        <div class="field" style="margin-top:14px"><label id="signLabel">Type your full name to sign</label><input id="sign" placeholder="Jamie Doe"></div>
         <label class="agree dim" id="agreeWrap"><input type="checkbox" id="agree"> I have read and agree to the waiver above.</label>
+        <div id="guardianBlock" style="display:none;margin-top:14px;padding:14px 15px;background:var(--green-soft);border-radius:var(--radius-md)">
+          <div style="font-size:14.5px;color:var(--color-text-secondary);margin-bottom:9px"><b>Youth racer(s) under 16:</b> a parent or legal guardian must agree to the waiver on their behalf, and should sign with their own name above.</div>
+          <label class="ckline"><input type="checkbox" id="guardianAck"> I am the parent / legal guardian of the youth racer(s) in this registration, and I agree to this waiver on their behalf.</label>
+        </div>
       </div>
 
       <!-- STEP 5 — SPCA -->
@@ -298,11 +309,11 @@
 </div>
 
 <script>
-  const BASE = 20, CITY = 5; // $ base per racer, $ per city per racer
-  function perRacer(){ return BASE + CITY*data.cities.length; }
-  function total(){ return data.quantity * perRacer(); }
+  const BASE = 20, KID = 5, CITY = 5; // adult first city, youth(under16) first city, per extra city
+  function extraCities(){ return Math.max(0, data.cities.length - 1); }
+  function total(){ return data.adults*(BASE+CITY*extraCities()) + data.kids*(KID+CITY*extraCities()); }
   let step = 0;
-  const data = { type:'Solo', quantity:1, cities:[], profileFile:null, receiptFile:null };
+  const data = { type:'Solo', quantity:1, adults:1, kids:0, cities:[], profileFile:null, receiptFile:null };
 
   // ---- type selection ----
   function pickType(t){
@@ -310,6 +321,7 @@
     document.getElementById('ch-solo').classList.toggle('sel', t==='solo');
     document.getElementById('ch-team').classList.toggle('sel', t==='team');
     document.getElementById('team-fields').style.display = (t==='team') ? 'block' : 'none';
+    document.getElementById('solo-fields').style.display = (t==='team') ? 'none' : 'block';
   }
 
   // ---- file uploads (preview only here; uploaded to Cloudinary on pay) ----
@@ -348,7 +360,12 @@
     const isLast = step===5;
     document.getElementById('nextBtn').innerHTML = isLast ? ('Pay $'+total().toFixed(2)+' & Register') : 'Continue';
     document.getElementById('err').textContent='';
-    if(step===3) checkWaiverScroll();
+    if(step===3){
+      checkWaiverScroll();
+      const hasYouth = data.kids>0;
+      document.getElementById('guardianBlock').style.display = hasYouth ? 'block' : 'none';
+      document.getElementById('signLabel').textContent = hasYouth ? 'Parent / guardian full name to sign' : 'Type your full name to sign';
+    }
     if(step===5) buildSummary();
     window.scrollTo({top:0,behavior:'smooth'});
   }
@@ -358,9 +375,15 @@
     if(step===0){
       if(data.type==='Team captain'){
         data.teamName = document.getElementById('teamName').value.trim();
-        data.quantity = Math.max(1, parseInt(document.getElementById('qty').value||'1',10));
+        data.adults = Math.max(0, parseInt(document.getElementById('qtyAdult').value||'0',10));
+        data.kids = Math.max(0, parseInt(document.getElementById('qtyKid').value||'0',10));
         if(!data.teamName) return fail('Please enter a team name.');
-      } else { data.quantity = 1; }
+        if(data.adults + data.kids < 1) return fail('Add at least one racer.');
+      } else {
+        const youth = document.getElementById('soloYouth').checked;
+        data.adults = youth ? 0 : 1; data.kids = youth ? 1 : 0;
+      }
+      data.quantity = data.adults + data.kids;
       if(!data.cities.length) return fail('Please choose at least one city to compete in.');
       return true;
     }
@@ -384,6 +407,8 @@
       data.waiverName=document.getElementById('sign').value.trim();
       if(!data.waiverName) return fail('Type your name to sign the waiver.');
       if(!document.getElementById('agree').checked) return fail('Please read and agree to the waiver.');
+      if(data.kids>0 && !document.getElementById('guardianAck').checked) return fail('A parent or guardian must agree on behalf of youth racers.');
+      data.guardianConsent = data.kids>0;
       return true;
     }
     if(step===4){
@@ -404,15 +429,21 @@
     const rows = [
       ['Racer', data.fullName||'—'],
       ['Email', data.email||'—'],
-      ['Entry', data.type==='Team captain' ? ('Team — '+data.teamName+' ('+data.quantity+' racers)') : 'Solo'],
+      ['Entry', data.type==='Team captain'
+        ? ('Team — '+data.teamName+' ('+data.adults+' adult'+(data.adults===1?'':'s')+(data.kids?(', '+data.kids+' youth'):'')+')')
+        : (data.kids ? 'Solo · youth (under 16)' : 'Solo')],
       ['Cities', data.cities.length ? data.cities.join(', ') : '—'],
       ['Emergency contact', (data.emName||'—')],
-      ['Waiver', data.waiverName ? ('Signed by '+data.waiverName) : '—'],
+      ['Waiver', data.waiverName ? ((data.kids>0?'Guardian signed — ':'Signed by ')+data.waiverName) : '—'],
       ['SPCA receipt', data.receiptFile ? 'Uploaded ✓' : '—'],
     ];
     document.getElementById('summary').innerHTML = rows.map(r=>'<div class="srow"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
     document.getElementById('amt').textContent = '$'+total().toFixed(2);
-    document.getElementById('priceBreak').textContent = '$'+BASE+' + $'+CITY+'×'+data.cities.length+' city'+(data.cities.length===1?'':'ies')+' per racer × '+data.quantity+' racer'+(data.quantity>1?'s':'');
+    const extra = Math.max(0, data.cities.length - 1);
+    const bits=[];
+    if(data.adults) bits.push(data.adults+' adult'+(data.adults===1?'':'s')+' × $'+BASE);
+    if(data.kids) bits.push(data.kids+' youth × $'+KID);
+    document.getElementById('priceBreak').textContent = bits.join(' + ')+(extra?(' + $'+CITY+'×'+extra+' extra city each'):'')+' · first city included';
   }
 
   // ---- Cloudinary upload (no GPS needed for profile/receipt) ----
@@ -445,7 +476,7 @@
         body: JSON.stringify({
           fullName:data.fullName, email:data.email, password:data.password, phone:data.phone,
           type:data.type, teamName:data.teamName||'', emergencyName:data.emName, emergencyPhone:data.emPhone,
-          profilePhotoUrl, spcaReceiptUrl, waiverName:data.waiverName, cities:data.cities
+          profilePhotoUrl, spcaReceiptUrl, waiverName:data.waiverName, cities:data.cities, guardianConsent:!!data.guardianConsent
         })
       });
       const regData = await reg.json();
@@ -455,7 +486,7 @@
       const co = await fetch('/api/stripe-checkout',{
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          kind:'registration', racerId:regData.racer.id, quantity:data.quantity, cityCount:data.cities.length,
+          kind:'registration', racerId:regData.racer.id, adults:data.adults, kids:data.kids, quantity:data.quantity, cityCount:data.cities.length,
           successUrl: location.origin+'/?paid=1', cancelUrl: location.href
         })
       });

@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     profilePhotoUrl, waiverName,                    // waiver typed-name signature
     spcaReceiptUrl,                                 // Cloudinary URL of the donation receipt
     cities,                                         // array of city names the racer is competing in
+    guardianConsent,                                // true when a parent/guardian signed for youth (under 16)
   } = req.body || {};
 
   if (!fullName || !email || !password || !waiverName) {
@@ -39,6 +40,7 @@ export default async function handler(req, res) {
     'SPCA receipt URL': spcaReceiptUrl || '',
     'SPCA receipt status': 'Pending',          // you review within 24h
     'Cities': Array.isArray(cities) ? cities.join(', ') : (cities || ''),
+    'Guardian consent': !!guardianConsent,
     'Registration status': 'Pending payment',
     'Registered at': new Date().toISOString(),
   });
