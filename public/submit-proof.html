@@ -98,6 +98,8 @@
     <div class="navsec admin-only" style="display:none">Admin</div>
     <a class="navitem admin-only" href="admin-email.html" style="display:none"><i class="ti ti-mail"></i>Email campaigns</a>
     <a class="navitem admin-only" href="admin-cp.html" style="display:none"><i class="ti ti-flag-cog"></i>CP management</a>
+    <a class="navitem auth-out" href="login.html"><i class="ti ti-login"></i>Log in</a>
+    <div class="navitem auth-in" style="display:none" onclick="ycarLogout()"><i class="ti ti-logout"></i>Log out</div>
     <div class="host-card"><div class="h1">Hosted by</div><div class="h2">Natural Selection AR</div><div class="h3">info@naturalselectionar.com</div></div>
   </aside>
   <div class="topbar"><a class="logo" href="index.html" style="border:none;padding:0;margin:0"><span class="badge" style="width:34px;height:34px;font-size:18px"><i class="ti ti-mountain"></i></span><div><div class="t1">YCAR 2026</div></div></a></div>
@@ -221,5 +223,6 @@
   loadCps();
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
+<script>(function(){var t=null;try{t=localStorage.getItem("ygtar_token");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
 </body>
 </html>
