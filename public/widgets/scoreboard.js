@@ -1,5 +1,5 @@
 // public/widgets/scoreboard.js
-// Embed the live YGTAR leaderboard on naturalselectionar.com (or anywhere).
+// Embed the live YCAR leaderboard on naturalselectionar.com (or anywhere).
 //
 // On your Bluehost page, drop in:
 //   <div id="ygtar-scoreboard"></div>

@@ -1,6 +1,6 @@
-# You Got This Adventure Race (YGTAR) — App
+# Your Choice Adventure Race (YCAR) — App
 
-Backend + integration skeleton for the **You Got This Adventure Race**, hosted by
+Backend + integration skeleton for the **Your Choice Adventure Race**, hosted by
 Natural Selection Adventure Racing. Race runs **June 13 – September 30, 2026** across
 three disciplines: hiking, biking, paddling.
 
@@ -48,7 +48,7 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
 4. Run `vercel dev` to test locally.
 
 ### 2. Airtable — build the base
-1. Create a base called **YGTAR 2026**. Copy its Base ID (starts with `app…`) into `AIRTABLE_BASE_ID`.
+1. Create a base called **YCAR 2026**. Copy its Base ID (starts with `app…`) into `AIRTABLE_BASE_ID`.
 2. Create a Personal Access Token at airtable.com/create/tokens with data read/write
    scope on this base. Put it in `AIRTABLE_TOKEN`.
 3. Create these tables and fields (field type in brackets):

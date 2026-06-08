@@ -16,15 +16,28 @@ export default async function handler(req, res) {
   if (kind === 'registration') {
     // Team captains pay for everyone in one transaction -> quantity = number of racers.
     const qty = Math.max(1, parseInt(quantity || '1', 10));
+    const cityCount = Math.max(0, parseInt(req.body.cityCount || '0', 10));
     line_items = [{
       price_data: {
         currency: 'cad',
-        product_data: { name: 'YGTAR 2026 Registration' },
-        unit_amount: parseInt(process.env.REGISTRATION_PRICE_CENTS || '500', 10),
+        product_data: { name: 'YCAR 2026 Registration' },
+        unit_amount: parseInt(process.env.REGISTRATION_PRICE_CENTS || '2000', 10),
       },
       quantity: qty,
     }];
+    // $5 per city, per racer
+    if (cityCount > 0) {
+      line_items.push({
+        price_data: {
+          currency: 'cad',
+          product_data: { name: `City series fee (${cityCount} ${cityCount === 1 ? 'city' : 'cities'})` },
+          unit_amount: parseInt(process.env.CITY_PRICE_CENTS || '500', 10),
+        },
+        quantity: qty * cityCount,
+      });
+    }
     metadata.racerCount = String(qty);
+    metadata.cityCount = String(cityCount);
   } else if (kind === 'swag') {
     // items: [{ name, amountCents, quantity }]
     line_items = (items || []).map((it) => ({

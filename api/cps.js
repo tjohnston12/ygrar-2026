@@ -20,6 +20,7 @@ export default async function handler(req, res) {
     difficulty: c.Difficulty || null,
     location: c['Location description'] || '',
     chain: c['Chain position'] || null,
+    city: c.City || '',
   }));
   return res.status(200).json({ cps });
 }

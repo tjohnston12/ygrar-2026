@@ -48,8 +48,8 @@ export default async function handler(req, res) {
       if (session.customer_details?.email) {
         await sendEmail({
           to: session.customer_details.email,
-          subject: "You're registered for YGTAR 2026!",
-          html: `<p>You're all set for the You Got This Adventure Race. Good luck out there!</p>
+          subject: "You're registered for YCAR 2026!",
+          html: `<p>You're all set for the Your Choice Adventure Race. Good luck out there!</p>
                  <p>— Natural Selection Adventure Racing</p>`,
         });
       }
