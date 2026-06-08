@@ -53,17 +53,43 @@ export default async function handler(req, res) {
     'Submitted at': new Date().toISOString(),
   });
 
-  // First verified visit earns a 48h offer to place the next CP in this chain.
-  // (The offer/queue logic can run from an Airtable automation or a follow-up
-  //  endpoint — left as a hook here so you can decide the exact rule.)
+  // First verified visit reserves the next slot in this chain: we drop in a
+  // placeholder ("waiting for [team] to place a new one") attributed to this team.
+  // Placing fills it in (-> Live); declining removes it; until then it shows as waiting.
+  let earnedPlacement = false, placeholderId = null;
   if (verified) {
     await update('CPs', cpId, { 'Last verified at': new Date().toISOString() });
+
+    const nextChain = (cp['Chain position'] || 0) + 1;
+    const slot = `AND({Discipline}='${esc(cp.Discipline || '')}', {City}='${esc(cp.City || '')}', {Chain position}=${nextChain}, OR({Status}='Pending', {Status}='Live'))`;
+    const existing = await findOne('CPs', slot);
+
+    if (existing) {
+      // Slot already spoken for. It's still yours to place if you're the holder and it hasn't gone live.
+      if (existing.Status === 'Pending' && (existing['Placed by'] || []).includes(racer.id)) {
+        earnedPlacement = true; placeholderId = existing.id;
+      }
+    } else {
+      const teamName = (me['Team name'] || '').trim() || me['Full name'] || racer.name || 'A racer';
+      const ph = await create('CPs', {
+        'Name': 'Awaiting placement',
+        'Discipline': cp.Discipline || '',
+        'City': cp.City || '',
+        'Chain position': nextChain,
+        'Status': 'Pending',
+        'Placed by': [racer.id],
+        'Placed by team': teamName,
+      });
+      earnedPlacement = true; placeholderId = ph.id;
+    }
   }
 
   return res.status(200).json({
     verified,
     distanceMetres: Math.round(metres),
     proofId: proof.id,
+    earnedPlacement,
+    placeholderId,
     message: verified
       ? 'Verified! You can place the next CP in this chain.'
       : `Photo was ${Math.round(metres)} m from the control point — try getting closer.`,

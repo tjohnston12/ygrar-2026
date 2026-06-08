@@ -117,6 +117,8 @@
       <select id="cp-city" class="cpcity" onchange="setCity(this.value)"><option value="">All cities</option></select>
     </div>
 
+    <div id="waitingList" style="display:none;margin-bottom:14px"></div>
+
     <div class="mapwrap">
       <div class="map-note" id="mapNote">No control points placed yet — they'll appear here as racers claim them.</div>
       <div id="map"></div>
@@ -162,13 +164,27 @@
   function draw(){
     if(layer) layer.remove();
     layer = L.layerGroup().addTo(map);
-    const shown = allCps.filter(c => (c.status==='Live'||c.status==='Pending') && c.lat!=null && c.lng!=null && (filter==='all'||c.discipline===filter) && (cityFilter===''||c.city===cityFilter) && (!familyOnly||c.familyFriendly));
-    shown.forEach(c => L.marker([c.lat,c.lng],{icon:pinIcon(c.discipline, c.status==='Pending')}).bindPopup(popupHtml(c)).addTo(layer));
+    const shown = allCps.filter(c => c.status==='Live' && c.lat!=null && c.lng!=null && (filter==='all'||c.discipline===filter) && (cityFilter===''||c.city===cityFilter) && (!familyOnly||c.familyFriendly));
+    shown.forEach(c => L.marker([c.lat,c.lng],{icon:pinIcon(c.discipline)}).bindPopup(popupHtml(c)).addTo(layer));
     document.getElementById('mapNote').style.display = shown.length ? 'none' : 'block';
     if(shown.length){
       const b = L.latLngBounds(shown.map(c=>[c.lat,c.lng]));
       map.fitBounds(b.pad(0.25), { maxZoom:13 });
     }
+    drawWaiting();
+  }
+  function drawWaiting(){
+    const wl = document.getElementById('waitingList');
+    const waiting = allCps.filter(c => c.status==='Pending' && (filter==='all'||c.discipline===filter) && (cityFilter===''||c.city===cityFilter));
+    if(!waiting.length){ wl.style.display='none'; wl.innerHTML=''; return; }
+    wl.style.display='block';
+    wl.innerHTML = waiting.map(c=>{
+      const color = COLORS[c.discipline]||COLORS.Other;
+      return '<div style="display:flex;align-items:center;gap:11px;background:#fbeedd;border:1px solid rgba(169,101,24,.25);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px">'+
+        '<div style="width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,'+color+' 16%,white);color:'+color+'"><i class="ti '+(ICONS[c.discipline]||'ti-flag')+'"></i></div>'+
+        '<div style="font-size:14px;color:#7a4d12"><b>'+(c.placedByTeam||'A racer')+'</b> is placing the next '+c.discipline.toLowerCase()+' control point'+(c.city?(' in '+c.city):'')+'. <span style="color:#a96518">Waiting for it to drop…</span></div>'+
+      '</div>';
+    }).join('');
   }
   function setFilter(f, el){
     filter = f;

@@ -130,7 +130,7 @@
     <!-- place the next CP (revealed after a verified submission) -->
     <div id="placePanel" style="display:none;margin-top:18px;border:1px solid rgba(29,158,117,.3);background:var(--green-soft);border-radius:var(--radius-md);padding:18px">
       <h3 style="font-size:17px;color:var(--green-dark);margin-bottom:4px">Place the next control point</h3>
-      <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:14px">You earned the right to set the next point in this chain. Add a photo of the spot and the details below — it'll show as <b>pending</b> under your team name until the organizer approves it. Keep it legal, reachable, and safe. Not up for it? You can pass it to the next racer.</p>
+      <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:14px">You earned the right to set the next point in this chain. Add a photo of the spot and the details below — it goes live on the map right away for others to chase. Keep it legal, reachable, and safe. Not up for it? Pass it to the next racer.</p>
       <div class="field"><label>Name</label><input id="pl-name" placeholder="e.g. Riverside Lookout"></div>
       <div class="field"><label>Photo of the location</label>
         <div class="drop" id="pl-drop" onclick="document.getElementById('pl-file').click()" style="margin-top:4px"><i class="ti ti-camera"></i>Tap to add a photo of the spot</div>
@@ -244,10 +244,12 @@
   });
 
   function declinePlacement(){
+    var tok=token(); var pid=state.placeholderId;
     document.getElementById('placePanel').style.display='none';
     var r=document.getElementById('result');
     r.className='result win'; r.style.display='block';
-    r.innerHTML='<h3>Passed on 👍</h3><p>No problem — this point is left open for the next racer to place. Your verified visit still counts.</p>';
+    r.innerHTML='<h3>Passed on 👍</h3><p>No problem — the next slot is back open for another racer to place. Your verified visit still counts.</p>';
+    if(tok&&pid){ fetch('/api/cp-place',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({action:'decline',cpId:pid})}).catch(()=>{}); }
   }
 
   async function placeNextCp(){
@@ -262,14 +264,14 @@
       const photoUrl = await uploadFile(placeState.file);
       const res=await fetch('/api/cp-place',{
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
-        body:JSON.stringify({ proofId:state.proofId, name, location:document.getElementById('pl-loc').value.trim(),
+        body:JSON.stringify({ action:'place', cpId:state.placeholderId, name, location:document.getElementById('pl-loc').value.trim(),
           latitude:parseFloat(lat), longitude:parseFloat(lng), difficulty:document.getElementById('pl-diff').value,
           familyFriendly:document.getElementById('pl-family').checked, photoUrl })
       });
       const data=await res.json();
       if(!res.ok) throw new Error(data.error||'Could not place the point');
       out.className='result win'; out.style.display='block';
-      out.innerHTML='<h3>Submitted! 🚩</h3><p>Your control point is on the map as <b>pending</b> under your team name. Once the organizer approves it, it goes live for everyone to chase.</p>';
+      out.innerHTML='<h3>It\'s live! 🚩</h3><p>Your control point is now on the map for everyone to chase. Nicely done — and thanks for keeping it safe and reachable.</p>';
       btn.style.display='none'; document.getElementById('pl-decline').style.display='none';
     }catch(e){ out.className='result lose'; out.style.display='block'; out.innerHTML='<p>'+e.message+'</p>'; btn.classList.remove('dim'); }
   }
@@ -290,10 +292,14 @@
       if(!res.ok) throw new Error(data.error||'Submission failed');
       if(data.verified){
         result.className='result win'; result.style.display='block';
-        result.innerHTML='<h3>Verified! 🎉</h3><p>Your photo was '+data.distanceMetres+' m from the control point. You\'ve earned the right to place the next point in this chain — set it up below.</p>';
-        state.proofId = data.proofId;
-        document.getElementById('placePanel').style.display='block';
-        document.getElementById('placePanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+        if(data.earnedPlacement && data.placeholderId){
+          result.innerHTML='<h3>Verified! 🎉</h3><p>Your photo was '+data.distanceMetres+' m from the control point. The next slot in this chain is now reserved in your name — place it below, or pass it on.</p>';
+          state.placeholderId = data.placeholderId;
+          document.getElementById('placePanel').style.display='block';
+          document.getElementById('placePanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+        } else {
+          result.innerHTML='<h3>Verified! 🎉</h3><p>Your photo was '+data.distanceMetres+' m from the control point. Another team has already claimed placing the next point in this chain, so this one\'s logged for you.</p>';
+        }
       } else {
         result.className='result lose'; result.style.display='block';
         result.innerHTML='<h3>Not quite there</h3><p>'+data.message+'</p>';
