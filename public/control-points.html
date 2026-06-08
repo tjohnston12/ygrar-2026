@@ -95,6 +95,10 @@
     <a class="navitem admin-only" href="admin-email.html" style="display:none"><i class="ti ti-mail"></i>Email campaigns</a>
     <a class="navitem admin-only" href="admin-cp.html" style="display:none"><i class="ti ti-flag-cog"></i>CP management</a>
     <a class="navitem auth-out" href="login.html"><i class="ti ti-login"></i>Log in</a>
+    <div class="navitem auth-in" style="display:none;cursor:default">
+      <span id="acctAv" style="width:26px;height:26px;border-radius:50%;background:var(--green-soft);color:var(--green);display:inline-grid;place-items:center;font-size:11px;font-weight:700;background-size:cover;background-position:center;flex:none"></span>
+      <span id="acctNm" style="font-size:13.5px;font-weight:600;color:var(--color-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    </div>
     <div class="navitem auth-in" style="display:none" onclick="ycarLogout()"><i class="ti ti-logout"></i>Log out</div>
     <div class="host-card"><div class="h1">Hosted by</div><div class="h2">Natural Selection AR</div><div class="h3">info@naturalselectionar.com</div></div>
   </aside>
@@ -137,8 +141,19 @@
     let p=''; for(let i=1;i<=5;i++){ p+='<span class="pip" style="'+(c.difficulty&&i<=c.difficulty?('background:'+color):'')+'"></span>'; }
     const labels={1:'Family friendly',2:'Easy',3:'Moderate',4:'Hard',5:'Expert'};
     return '<div class="pop"><h4>'+c.name+(c.familyFriendly?' <span style="font-size:11px;font-weight:700;color:var(--green-dark);background:var(--green-soft);padding:2px 7px;border-radius:999px;vertical-align:middle">Family</span>':'')+'</h4><div class="meta">'+c.discipline+(c.city?(' · '+c.city):'')+(c.location?(' · '+c.location):'')+'</div>'+
-      (c.difficulty?('<div class="drow">Difficulty: <span class="pips">'+p+'</span> '+(labels[c.difficulty]||'')+'</div>'):'')+'</div>';
+      (c.difficulty?('<div class="drow">Difficulty: <span class="pips">'+p+'</span> '+(labels[c.difficulty]||'')+'</div>'):'')+
+      (c.flagged?'<div style="font-size:12px;color:#c0392b;margin-top:6px"><i class="ti ti-flag"></i> Flagged for review</div>':'')+
+      '<button onclick="flagCp(\''+c.id+'\')" style="margin-top:9px;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--color-text-tertiary);background:none;border:none;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:5px"><i class="ti ti-flag"></i>Flag an issue</button>'+
+      '</div>';
   }
+  function flagCp(id){
+    var tok=null; try{tok=localStorage.getItem('ygtar_token');}catch(e){}
+    if(!tok){ window.location.href='login.html?next=control-points.html'; return; }
+    var reason = prompt('What looks wrong with this control point? (optional)') ;
+    if(reason===null) return; // cancelled
+    fetch('/api/cp-flag',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({cpId:id,reason:reason})})
+      .then(r=>r.json()).then(()=>{ alert('Thanks — this point has been flagged for the organizers to review.'); })
+      .catch(()=>{ alert('Could not flag right now — please try again.'); });
 
   function draw(){
     if(layer) layer.remove();
@@ -184,6 +199,6 @@
   load();
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
-<script>(function(){var t=null;try{t=localStorage.getItem("ygtar_token");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
+<script>(function(){var t=null,r={};try{t=localStorage.getItem("ygtar_token");r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});var nm=document.getElementById("acctNm"),av=document.getElementById("acctAv");if(nm)nm.textContent=r.name||"My account";if(av){if(r.profilePhoto){av.style.backgroundImage="url("+r.profilePhoto+")";av.textContent="";}else{av.textContent=((r.name||"?").split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("")||"?").toUpperCase();}}}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
 </body>
 </html>

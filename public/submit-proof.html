@@ -99,6 +99,10 @@
     <a class="navitem admin-only" href="admin-email.html" style="display:none"><i class="ti ti-mail"></i>Email campaigns</a>
     <a class="navitem admin-only" href="admin-cp.html" style="display:none"><i class="ti ti-flag-cog"></i>CP management</a>
     <a class="navitem auth-out" href="login.html"><i class="ti ti-login"></i>Log in</a>
+    <div class="navitem auth-in" style="display:none;cursor:default">
+      <span id="acctAv" style="width:26px;height:26px;border-radius:50%;background:var(--green-soft);color:var(--green);display:inline-grid;place-items:center;font-size:11px;font-weight:700;background-size:cover;background-position:center;flex:none"></span>
+      <span id="acctNm" style="font-size:13.5px;font-weight:600;color:var(--color-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    </div>
     <div class="navitem auth-in" style="display:none" onclick="ycarLogout()"><i class="ti ti-logout"></i>Log out</div>
     <div class="host-card"><div class="h1">Hosted by</div><div class="h2">Natural Selection AR</div><div class="h3">info@naturalselectionar.com</div></div>
   </aside>
@@ -122,6 +126,27 @@
 
     <button class="btn dim" id="submit" onclick="submitProof()"><i class="ti ti-circle-check"></i>Submit proof</button>
     <div class="result" id="result"></div>
+
+    <!-- place the next CP (revealed after a verified submission) -->
+    <div id="placePanel" style="display:none;margin-top:18px;border:1px solid rgba(29,158,117,.3);background:var(--green-soft);border-radius:var(--radius-md);padding:18px">
+      <h3 style="font-size:17px;color:var(--green-dark);margin-bottom:4px">Place the next control point</h3>
+      <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:14px">You earned it! Set the next point in this chain — it goes live right away for other racers to chase. Keep it legal, reachable, and safe.</p>
+      <div class="field"><label>Name</label><input id="pl-name" placeholder="e.g. Riverside Lookout"></div>
+      <div class="field"><label>Location description</label><input id="pl-loc" placeholder="e.g. End of the boardwalk, by the big pine"></div>
+      <div class="field"><label>Coordinates</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="pl-lat" placeholder="Latitude" style="flex:1;min-width:120px">
+          <input id="pl-lng" placeholder="Longitude" style="flex:1;min-width:120px">
+          <button class="btn-ghost" type="button" onclick="useMyLocation()" style="white-space:nowrap"><i class="ti ti-current-location"></i> Use my location</button>
+        </div>
+      </div>
+      <div class="field"><label>Difficulty</label>
+        <select id="pl-diff"><option value="1">1 — Easy</option><option value="2">2</option><option value="3" selected>3 — Moderate</option><option value="4">4</option><option value="5">5 — Tough</option></select>
+      </div>
+      <label style="display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer;margin-bottom:12px"><input type="checkbox" id="pl-family" style="width:17px;height:17px;accent-color:var(--green)"> Family-friendly (easy &amp; kid-appropriate)</label>
+      <button class="btn" id="pl-submit" onclick="placeNextCp()"><i class="ti ti-map-pin-plus"></i>Place control point</button>
+      <div class="result" id="pl-result"></div>
+    </div>
   </main>
 </div>
 
@@ -191,6 +216,37 @@
     return out.secure_url;
   }
 
+  function useMyLocation(){
+    if(!navigator.geolocation){ alert('Location is not available in this browser.'); return; }
+    navigator.geolocation.getCurrentPosition(
+      p=>{ document.getElementById('pl-lat').value=p.coords.latitude.toFixed(6); document.getElementById('pl-lng').value=p.coords.longitude.toFixed(6); },
+      ()=>{ alert('Could not get your location — you can type the coordinates instead.'); },
+      { enableHighAccuracy:true, timeout:10000 }
+    );
+  }
+
+  async function placeNextCp(){
+    const btn=document.getElementById('pl-submit'); const out=document.getElementById('pl-result');
+    const name=document.getElementById('pl-name').value.trim();
+    const lat=document.getElementById('pl-lat').value.trim();
+    const lng=document.getElementById('pl-lng').value.trim();
+    if(!name||!lat||!lng){ out.className='result lose'; out.style.display='block'; out.innerHTML='<p>Please add a name and coordinates.</p>'; return; }
+    btn.classList.add('dim');
+    try{
+      const res=await fetch('/api/cp-place',{
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
+        body:JSON.stringify({ proofId:state.proofId, name, location:document.getElementById('pl-loc').value.trim(),
+          latitude:parseFloat(lat), longitude:parseFloat(lng), difficulty:document.getElementById('pl-diff').value,
+          familyFriendly:document.getElementById('pl-family').checked })
+      });
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.error||'Could not place the point');
+      out.className='result win'; out.style.display='block';
+      out.innerHTML='<h3>It\'s live! 🚩</h3><p>Your control point is now on the map for everyone to chase. Nicely done.</p>';
+      btn.style.display='none';
+    }catch(e){ out.className='result lose'; out.style.display='block'; out.innerHTML='<p>'+e.message+'</p>'; btn.classList.remove('dim'); }
+  }
+
   async function submitProof(){
     const btn = document.getElementById('submit'); const result = document.getElementById('result');
     const tok = token();
@@ -207,7 +263,10 @@
       if(!res.ok) throw new Error(data.error||'Submission failed');
       if(data.verified){
         result.className='result win'; result.style.display='block';
-        result.innerHTML='<h3>Verified! 🎉</h3><p>'+data.message+' Your photo was '+data.distanceMetres+' m from the control point.</p>';
+        result.innerHTML='<h3>Verified! 🎉</h3><p>Your photo was '+data.distanceMetres+' m from the control point. You\'ve earned the right to place the next point in this chain — set it up below.</p>';
+        state.proofId = data.proofId;
+        document.getElementById('placePanel').style.display='block';
+        document.getElementById('placePanel').scrollIntoView({behavior:'smooth',block:'nearest'});
       } else {
         result.className='result lose'; result.style.display='block';
         result.innerHTML='<h3>Not quite there</h3><p>'+data.message+'</p>';
@@ -223,6 +282,6 @@
   loadCps();
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
-<script>(function(){var t=null;try{t=localStorage.getItem("ygtar_token");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
+<script>(function(){var t=null,r={};try{t=localStorage.getItem("ygtar_token");r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});var nm=document.getElementById("acctNm"),av=document.getElementById("acctAv");if(nm)nm.textContent=r.name||"My account";if(av){if(r.profilePhoto){av.style.backgroundImage="url("+r.profilePhoto+")";av.textContent="";}else{av.textContent=((r.name||"?").split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("")||"?").toUpperCase();}}}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
 </body>
 </html>
