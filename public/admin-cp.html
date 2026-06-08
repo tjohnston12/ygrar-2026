@@ -107,6 +107,7 @@
     <a class="navitem" href="control-points.html"><i class="ti ti-flag-2"></i>Control points</a>
     <a class="navitem" href="submit-proof.html"><i class="ti ti-camera"></i>Submit proof</a>
     <a class="navitem" href="gallery.html"><i class="ti ti-photo"></i>Adventure photos</a>
+    <a class="navitem" href="roster.html"><i class="ti ti-users-group"></i>Teams &amp; families</a>
     <a class="navitem" href="swag.html"><i class="ti ti-shirt"></i>Swag store</a>
     <div class="navsec">Admin</div>
     <a class="navitem" href="admin-email.html"><i class="ti ti-mail"></i>Email campaigns</a>
@@ -143,6 +144,7 @@
           <div class="field"><label>Status</label><select id="f-status"><option>Live</option><option>Pending</option></select></div>
           <div class="field"><label>City</label><select id="f-city"><option value="">—</option></select></div>
         </div>
+        <label class="ckline" style="margin-top:12px;display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer"><input type="checkbox" id="f-family" style="width:17px;height:17px;accent-color:var(--green)"> Family-friendly (easy, kid-appropriate)</label>
         <div style="display:flex;align-items:center;gap:14px;margin-top:16px">
           <button class="btn" id="addBtn" onclick="addCp()"><i class="ti ti-plus"></i>Add control point</button>
           <span class="status" id="addStatus"></span>
@@ -179,6 +181,7 @@
       <div class="field"><label>Longitude</label><input id="e-lng"></div>
     </div>
     <div class="field" style="margin:12px 0"><label>City</label><select id="e-city"><option value="">—</option></select></div>
+    <label class="ckline" style="display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer;margin-bottom:4px"><input type="checkbox" id="e-family" style="width:17px;height:17px;accent-color:var(--green)"> Family-friendly (easy, kid-appropriate)</label>
     <div class="mfoot"><button class="btn-ghost" onclick="closeEdit()">Cancel</button><button class="btn" id="saveBtn" onclick="saveEdit()">Save changes</button></div>
   </div>
 </div>
@@ -220,7 +223,7 @@
       const statOpts=['Live','Pending','Removed'].map(s=>'<option'+(c.status===s?' selected':'')+'>'+s+'</option>').join('');
       return '<div class="cprow'+(c.status==='Removed'?' removed':'')+'">'+
         '<div class="cpic" style="background:color-mix(in srgb,var('+v+') 14%,white);color:var('+v+')"><i class="ti '+(ICON[c.discipline]||'ti-flag')+'"></i></div>'+
-        '<div><div class="cpname">'+c.name+statusBadge(c.status)+'</div>'+
+        '<div><div class="cpname">'+c.name+statusBadge(c.status)+(c.familyFriendly?'<span class="badge" style="background:var(--green-soft);color:var(--green-dark)">Family</span>':'')+'</div>'+
           '<div class="cpmeta">'+c.discipline+(c.city?(' · '+c.city):'')+(c.chain?(' · chain #'+c.chain):'')+(c.location?(' · '+c.location):'')+
           (c.lat!=null?(' · '+Number(c.lat).toFixed(4)+', '+Number(c.lng).toFixed(4)):'')+' · '+diffLabel(c.difficulty)+'</div></div>'+
         '<div class="ctrls">'+
@@ -245,7 +248,7 @@
       lat:document.getElementById('f-lat').value.trim(), lng:document.getElementById('f-lng').value.trim(),
       location:document.getElementById('f-loc').value.trim(), difficulty:document.getElementById('f-diff').value,
       chain:document.getElementById('f-chain').value, status:document.getElementById('f-status').value,
-      city:document.getElementById('f-city').value };
+      city:document.getElementById('f-city').value, familyFriendly:document.getElementById('f-family').checked };
     if(!fields.name||!fields.lat||!fields.lng){ st.className='status bad'; st.textContent='Name, latitude and longitude are required.'; return; }
     btn.classList.add('dim');
     try{
@@ -268,6 +271,7 @@
     document.getElementById('e-lat').value=c.lat!=null?c.lat:'';
     document.getElementById('e-lng').value=c.lng!=null?c.lng:'';
     document.getElementById('e-city').value=c.city||'';
+    document.getElementById('e-family').checked=!!c.familyFriendly;
     document.getElementById('editOverlay').classList.add('on');
   }
   function closeEdit(){ document.getElementById('editOverlay').classList.remove('on'); }
@@ -276,7 +280,7 @@
     const fields={ name:document.getElementById('e-name').value.trim(), discipline:document.getElementById('e-disc').value,
       chain:document.getElementById('e-chain').value, location:document.getElementById('e-loc').value.trim(),
       lat:document.getElementById('e-lat').value.trim(), lng:document.getElementById('e-lng').value.trim(),
-      city:document.getElementById('e-city').value };
+      city:document.getElementById('e-city').value, familyFriendly:document.getElementById('e-family').checked };
     const btn=document.getElementById('saveBtn'); btn.classList.add('dim');
     try{
       const res=await fetch('/api/cp-manage',{method:'POST',headers:authHdr(),body:JSON.stringify({action:'update',id,fields})});

@@ -84,6 +84,7 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Placed by [Link → Racers]
    - Last verified at [Date]
    - City [Single line text]  (match the city Name; scopes the leaderboard and map)
+   - Family friendly [Checkbox]  (shows a Family badge + powers the family filter on the map)
 
    **Proof Submissions**
    - Racer [Link → Racers]
@@ -95,7 +96,7 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Status [Single select: Verified / Rejected / Pending]
    - Submitted at [Date]
 
-   **Photos** (gallery)
+   **Photos**  (add field: Junior [Checkbox] — Junior Explorer badge/filter in the gallery) (gallery)
    - Racer [Link → Racers]
    - Photo URL [Single line text]
    - Caption [Single line text]
@@ -145,6 +146,7 @@ The **screens you prototyped** (home, registration, gallery, swag, admin) go int
    - Cities [Single line text]  — the cities a racer registered for (saved at registration).
    - Guardian consent [Checkbox]  — true when a parent/guardian signed the waiver for a youth (under 16) entry.
    - Children [Single line text]  — names of the children (under 16) registered under this adult.
+   - Children photos [Long text]  — Cloudinary URLs of the children's profile photos, in the same order.
 
 ### 3. Cloudinary — photo hosting
 You already use this in your employee app, so reuse that account.

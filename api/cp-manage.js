@@ -27,6 +27,7 @@ export default async function handler(req, res) {
       'Difficulty': f.difficulty ? parseInt(f.difficulty, 10) : null,
       'Chain position': f.chain ? parseInt(f.chain, 10) : null,
       'City': f.city || '',
+      'Family friendly': !!f.familyFriendly,
     });
     return res.status(200).json({ cp });
   }
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
     if (f.difficulty !== undefined) u['Difficulty'] = f.difficulty ? parseInt(f.difficulty, 10) : null;
     if (f.chain !== undefined) u['Chain position'] = f.chain ? parseInt(f.chain, 10) : null;
     if (f.city !== undefined) u['City'] = f.city;
+    if (f.familyFriendly !== undefined) u['Family friendly'] = !!f.familyFriendly;
     const cp = await update('CPs', id, u);
     return res.status(200).json({ cp });
   }

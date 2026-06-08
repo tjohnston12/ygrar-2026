@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Certificate · Your Choice Adventure Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --green:#1D9E75;--green-dark:#178060;--green-soft:#E6F5EF;--gold:#C9A23B;
+    --ink:#16201b;--muted:#5c6b62;--line:rgba(22,32,27,.14);
+    --font-sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-sans);color:var(--ink);background:#eef2ef;padding:24px;display:flex;flex-direction:column;align-items:center;gap:20px}
+
+  .controls{width:100%;max-width:880px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+  .controls h1{font-size:20px;font-weight:800}
+  .controls p{color:var(--muted);font-size:14.5px;margin:4px 0 16px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .field{flex:1;min-width:200px}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  input,select{width:100%;font-family:inherit;font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:10px}
+  .btn{margin-top:16px;display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;font-weight:600;font-size:15px;padding:12px 22px;border-radius:999px;border:none;cursor:pointer}
+  .btn:hover{background:var(--green-dark)}
+
+  /* Certificate */
+  .cert{width:100%;max-width:1000px;aspect-ratio:1.414/1;background:#fff;position:relative;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.12);overflow:hidden}
+  .cert .frame{position:absolute;inset:18px;border:2px solid var(--green);border-radius:4px}
+  .cert .frame:before{content:"";position:absolute;inset:7px;border:1px solid rgba(29,158,117,.4);border-radius:3px}
+  .cert .inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:7% 10%}
+  .cert .badge{width:118px;height:118px;border-radius:50%;object-fit:cover;border:3px solid var(--green-soft);margin-bottom:14px}
+  .cert .kicker{font-size:13px;letter-spacing:.34em;text-transform:uppercase;color:var(--green-dark);font-weight:700}
+  .cert .title{font-size:34px;font-weight:800;letter-spacing:-.01em;margin-top:6px}
+  .cert .pres{font-size:14px;color:var(--muted);margin:22px 0 8px}
+  .cert .name{font-family:'Caveat',cursive;font-size:58px;font-weight:700;color:var(--ink);line-height:1}
+  .cert .name-underline{width:62%;max-width:520px;border-bottom:1.5px solid var(--line);margin:8px 0 18px}
+  .cert .blurb{font-size:15px;color:var(--muted);max-width:80%}
+  .cert .foot{position:absolute;left:0;right:0;bottom:9%;display:flex;justify-content:space-around;align-items:flex-end;padding:0 12%}
+  .cert .foot .sig{font-size:12.5px;color:var(--muted)}
+  .cert .foot .sig .l{border-top:1px solid var(--line);padding-top:5px;min-width:170px}
+  .cert .foot .sig b{color:var(--ink);font-weight:700}
+  .cert.junior .frame{border-color:var(--gold)}
+  .cert.junior .frame:before{border-color:rgba(201,162,59,.4)}
+  .cert.junior .kicker,.cert.junior .name{color:#9a7a1c}
+  .cert.junior .badge{border-color:#f6edcf}
+
+  @media print{
+    body{background:#fff;padding:0}
+    .controls{display:none}
+    .cert{max-width:none;width:100%;box-shadow:none;border-radius:0;aspect-ratio:auto;height:100vh}
+    @page{size:A4 landscape;margin:0}
+  }
+</style>
+</head>
+<body>
+  <div class="controls">
+    <h1>Finisher certificate</h1>
+    <p>Make a keepsake certificate for a racer or a junior adventurer. Fill it in, then print or save as PDF.</p>
+    <div class="row">
+      <div class="field"><label>Name on the certificate</label><input id="name" placeholder="Jamie Doe" oninput="render()"></div>
+      <div class="field"><label>Type</label><select id="type" onchange="render()"><option value="racer">Racer</option><option value="junior">Junior Adventurer (under 16)</option></select></div>
+      <div class="field"><label>Team (optional)</label><input id="team" placeholder="Trail Blazers" oninput="render()"></div>
+    </div>
+    <button class="btn" onclick="window.print()"><i class="ti ti-printer"></i>Print / Save as PDF</button>
+  </div>
+
+  <div class="cert" id="cert">
+    <div class="frame"></div>
+    <div class="inner">
+      <img class="badge" src="logo.jpg" alt="">
+      <div class="kicker" id="kicker">Certificate of Participation</div>
+      <div class="title">Your Choice Adventure Race 2026</div>
+      <div class="pres">This certifies that</div>
+      <div class="name" id="cName">Your Name</div>
+      <div class="name-underline"></div>
+      <div class="blurb" id="blurb">took on the trails, the water and the climb across New Brunswick. Endurance · Navigation · Teamwork.</div>
+    </div>
+    <div class="foot">
+      <div class="sig"><div class="l"><b>Natural Selection Adventure Racing</b><br>Event host</div></div>
+      <div class="sig"><div class="l" id="dateline">2026 Season</div></div>
+    </div>
+  </div>
+
+<script>
+  function render(){
+    const name=document.getElementById('name').value.trim()||'Your Name';
+    const type=document.getElementById('type').value;
+    const team=document.getElementById('team').value.trim();
+    const cert=document.getElementById('cert');
+    cert.classList.toggle('junior', type==='junior');
+    document.getElementById('cName').textContent=name;
+    document.getElementById('kicker').textContent = type==='junior' ? 'Junior Adventurer' : 'Certificate of Participation';
+    const base = type==='junior'
+      ? 'showed true grit on the trails, the water and the climb. A real Your Choice adventurer!'
+      : 'took on the trails, the water and the climb across New Brunswick. Endurance · Navigation · Teamwork.';
+    document.getElementById('blurb').textContent = team ? (base+' Proudly racing with '+team+'.') : base;
+  }
+  render();
+</script>
+</body>
+</html>

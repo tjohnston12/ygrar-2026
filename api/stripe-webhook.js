@@ -41,16 +41,22 @@ export default async function handler(req, res) {
     const { kind, racerId } = session.metadata || {};
 
     if (kind === 'registration' && racerId) {
-      await update('Racers', racerId, {
+      const racer = await update('Racers', racerId, {
         'Registration status': 'Active',
         'Amount paid': (session.amount_total || 0) / 100,
       });
       if (session.customer_details?.email) {
+        const first = (racer['Full name'] || '').split(' ')[0] || 'there';
+        const kids = (racer['Children'] || '').split(',').map((s) => s.trim()).filter(Boolean);
+        const kidLine = kids.length
+          ? `<p>And a big welcome to your junior adventurer${kids.length > 1 ? 's' : ''}, ${kids.join(' and ')} — we can't wait to see you out on the course!</p>`
+          : '';
         await sendEmail({
           to: session.customer_details.email,
           subject: "You're registered for YCAR 2026!",
-          html: `<p>You're all set for the Your Choice Adventure Race. Good luck out there!</p>
-                 <p>— Natural Selection Adventure Racing</p>`,
+          html: `<p>Hi ${first}, you're all set for the Your Choice Adventure Race. Good luck out there!</p>
+                 ${kidLine}
+                 <p>See you out there,<br>Natural Selection Adventure Racing</p>`,
         });
       }
     } else if (kind === 'swag') {

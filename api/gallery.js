@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const racer = requireAuth(req, res);
     if (!racer) return;
 
-    const { url, caption, discipline, cpId, location } = req.body || {};
+    const { url, caption, discipline, cpId, location, junior } = req.body || {};
     if (!url) return res.status(400).json({ error: 'Photo url required' });
 
     const photo = await create('Photos', {
@@ -31,6 +31,7 @@ export default async function handler(req, res) {
       'Discipline': discipline || '',
       'CP': cpId ? [cpId] : undefined,
       'Location': location || '',
+      'Junior': !!junior,
       'Status': 'Pending review',   // approve before it shows publicly
       'Likes': 0,
       'Posted at': new Date().toISOString(),

@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     location: c['Location description'] || '',
     chain: c['Chain position'] || null,
     city: c.City || '',
+    familyFriendly: !!c['Family friendly'],
   }));
   return res.status(200).json({ cps });
 }

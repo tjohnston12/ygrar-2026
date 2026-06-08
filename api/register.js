@@ -25,6 +25,11 @@ export default async function handler(req, res) {
   const existing = await findOne('Racers', `{Email}='${esc(email)}'`);
   if (existing) return res.status(409).json({ error: 'An account with that email already exists' });
 
+  // children may arrive as ["Name", ...] or [{name, photo}, ...]
+  const childList = Array.isArray(children) ? children : [];
+  const childNames = childList.map((c) => (typeof c === 'string' ? c : (c && c.name) || '')).filter(Boolean);
+  const childPhotos = childList.map((c) => (c && c.photo) || '').filter(Boolean);
+
   const racer = await create('Racers', {
     'Full name': fullName,
     'Email': email,
@@ -42,7 +47,8 @@ export default async function handler(req, res) {
     'SPCA receipt status': 'Pending',          // you review within 24h
     'Cities': Array.isArray(cities) ? cities.join(', ') : (cities || ''),
     'Guardian consent': !!guardianConsent,
-    'Children': Array.isArray(children) ? children.join(', ') : (children || ''),
+    'Children': childNames.join(', '),
+    'Children photos': childPhotos.join(', '),
     'Registration status': 'Pending payment',
     'Registered at': new Date().toISOString(),
   });

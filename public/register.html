@@ -103,7 +103,10 @@
   .ckline{display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer}
   .ckline input{width:17px;height:17px;accent-color:var(--green)}
   .childrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-  .childrow input{flex:1}
+  .childrow input.childname{flex:1}
+  .childphoto{flex:none;width:42px;height:42px;border-radius:50%;border:1.5px dashed var(--color-border-secondary);display:grid;place-items:center;cursor:pointer;color:var(--color-text-tertiary);background-size:cover;background-position:center;overflow:hidden}
+  .childphoto.has{border-style:solid;border-color:var(--green)}
+  .childphoto i{font-size:17px}
   .childrow .rm{flex:none;width:40px;height:40px;border:1px solid var(--color-border-secondary);background:#fff;border-radius:10px;display:grid;place-items:center;cursor:pointer;color:var(--color-text-tertiary)}
   .childrow .rm:hover{color:#c0392b;border-color:#c0392b}
   .addchild{margin-top:6px;display:inline-flex;align-items:center;gap:7px;background:#fff;border:1.5px dashed var(--color-border-secondary);color:var(--color-text-secondary);font-weight:600;font-size:14px;padding:9px 16px;border-radius:var(--radius-pill);cursor:pointer}
@@ -167,6 +170,7 @@
     <a class="navitem" href="submit-proof.html"><i class="ti ti-camera"></i>Submit proof</a>
     <div class="navsec">Community</div>
     <a class="navitem" href="gallery.html"><i class="ti ti-photo"></i>Adventure photos</a>
+    <a class="navitem" href="roster.html"><i class="ti ti-users-group"></i>Teams &amp; families</a>
     <a class="navitem" href="sponsors.html"><i class="ti ti-star"></i>Sponsors</a>
     <a class="navitem" href="swag.html"><i class="ti ti-shirt"></i>Swag store</a>
     <div class="navsec admin-only" style="display:none">Admin</div>
@@ -331,14 +335,20 @@
   }
 
   // ---- children (added by the registering adult; guardian signs the waiver) ----
-  function addChild(){ data.children.push({name:''}); renderChildren(); }
+  function addChild(){ data.children.push({name:'',photoFile:null}); renderChildren(); }
   function removeChild(i){ data.children.splice(i,1); renderChildren(); }
+  function childPhoto(i, input){ const f=input.files[0]; if(!f) return; data.children[i].photoFile=f; renderChildren(); }
   function renderChildren(){
     const box=document.getElementById('childList');
-    box.innerHTML = data.children.map((c,i)=>
-      '<div class="childrow"><input class="childname" placeholder="Child\u2019s full name" value="'+c.name.replace(/"/g,'&quot;')+'" oninput="data.children['+i+'].name=this.value">'+
-      '<button type="button" class="rm" onclick="removeChild('+i+')" title="Remove"><i class="ti ti-x"></i></button></div>'
-    ).join('');
+    box.innerHTML = data.children.map((c,i)=>{
+      const avatar = c.photoFile
+        ? '<div class="childphoto has" style="background-image:url('+URL.createObjectURL(c.photoFile)+')" onclick="document.getElementById(\'cf-'+i+'\').click()"></div>'
+        : '<div class="childphoto" title="Add photo" onclick="document.getElementById(\'cf-'+i+'\').click()"><i class="ti ti-camera"></i></div>';
+      return '<div class="childrow">'+avatar+
+        '<input type="file" id="cf-'+i+'" accept="image/*" style="display:none" onchange="childPhoto('+i+',this)">'+
+        '<input class="childname" placeholder="Child\u2019s full name" value="'+c.name.replace(/"/g,'&quot;')+'" oninput="data.children['+i+'].name=this.value">'+
+        '<button type="button" class="rm" onclick="removeChild('+i+')" title="Remove"><i class="ti ti-x"></i></button></div>';
+    }).join('');
   }
 
   // ---- file uploads (preview only here; uploaded to Cloudinary on pay) ----
@@ -490,6 +500,13 @@
       const spcaReceiptUrl = await uploadFile(data.receiptFile);
       const profilePhotoUrl = data.profileFile ? await uploadFile(data.profileFile) : '';
 
+      // upload each child's photo (if added) and build name+photo list
+      const childData = [];
+      for(const c of data.children.filter(c=>c.name.trim())){
+        const photo = c.photoFile ? await uploadFile(c.photoFile) : '';
+        childData.push({ name:c.name.trim(), photo });
+      }
+
       status.textContent = 'Creating your account…';
       const reg = await fetch('/api/register',{
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -497,7 +514,7 @@
           fullName:data.fullName, email:data.email, password:data.password, phone:data.phone,
           type:data.type, teamName:data.teamName||'', emergencyName:data.emName, emergencyPhone:data.emPhone,
           profilePhotoUrl, spcaReceiptUrl, waiverName:data.waiverName, cities:data.cities, guardianConsent:!!data.guardianConsent,
-          children:data.children.filter(c=>c.name.trim()).map(c=>c.name.trim())
+          children:childData
         })
       });
       const regData = await reg.json();

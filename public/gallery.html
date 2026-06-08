@@ -67,9 +67,11 @@
   .fchip .dot{width:9px;height:9px;border-radius:50%}
   .fchip.on{color:#fff;border-color:transparent}.fchip.all.on{background:var(--green-dark)}
   .fchip.Hiking.on{background:var(--hike)}.fchip.Biking.on{background:var(--bike)}.fchip.Paddling.on{background:var(--paddle)}
+  .fchip.junior.on{background:var(--gold)}
+  .jbadge{position:absolute;top:10px;left:10px;background:var(--gold);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px}
-  .photo{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column}
+  .photo{position:relative;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column}
   .photo .img{aspect-ratio:4/3;width:100%;object-fit:cover;cursor:pointer;background:var(--color-background-tertiary)}
   .photo .pb{padding:13px 15px;display:flex;flex-direction:column;gap:8px;flex:1}
   .photo .cap{font-size:14.5px;font-weight:600;line-height:1.35}
@@ -126,6 +128,7 @@
     <a class="navitem" href="submit-proof.html"><i class="ti ti-camera"></i>Submit proof</a>
     <div class="navsec">Community</div>
     <div class="navitem active"><i class="ti ti-photo"></i>Adventure photos</div>
+    <a class="navitem" href="roster.html"><i class="ti ti-users-group"></i>Teams &amp; families</a>
     <a class="navitem" href="sponsors.html"><i class="ti ti-star"></i>Sponsors</a>
     <a class="navitem" href="swag.html"><i class="ti ti-shirt"></i>Swag store</a>
     <div class="navsec admin-only" style="display:none">Admin</div>
@@ -149,6 +152,7 @@
       <div class="fchip Hiking" data-f="Hiking" onclick="setFilter('Hiking',this)"><span class="dot" style="background:var(--hike)"></span>Hiking</div>
       <div class="fchip Biking" data-f="Biking" onclick="setFilter('Biking',this)"><span class="dot" style="background:var(--bike)"></span>Biking</div>
       <div class="fchip Paddling" data-f="Paddling" onclick="setFilter('Paddling',this)"><span class="dot" style="background:var(--paddle)"></span>Paddling</div>
+      <div class="fchip junior" data-f="junior" onclick="setFilter('junior',this)"><i class="ti ti-mood-kid"></i>Junior Explorers</div>
     </div>
 
     <div class="grid" id="grid"><div class="muted">Loading photos…</div></div>
@@ -170,6 +174,7 @@
       <select id="ucp"><option value="">None</option></select></div>
     <div class="field"><label>Caption</label><textarea id="ucap" placeholder="A line about the moment…"></textarea></div>
     <div class="field"><label>Location <span style="color:var(--color-text-tertiary);font-weight:400">(optional)</span></label><input id="uloc" placeholder="e.g. Mount Carleton"></div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer;margin-bottom:6px"><input type="checkbox" id="ujunior" style="width:17px;height:17px;accent-color:var(--gold)"> A junior adventurer (under 16) is featured</label>
     <div class="err" id="uerr"></div>
     <div class="mrow"><button class="btn-ghost" onclick="closeUpload()">Cancel</button><button class="btn" id="usubmit" onclick="submitUpload()">Submit for review</button></div>
   </div>
@@ -214,10 +219,11 @@
   }
   function render(){
     const grid=document.getElementById('grid');
-    const shown = photos.filter(p=>filter==='all'||p.Discipline===filter);
+    const shown = photos.filter(p=> filter==='all' ? true : (filter==='junior' ? p.Junior : p.Discipline===filter));
     if(!shown.length){ grid.innerHTML='<div class="muted">No photos in this category yet.</div>'; return; }
     grid.innerHTML = shown.map((p,i)=>(
       '<div class="photo">'+
+        (p.Junior?'<span class="jbadge"><i class="ti ti-mood-kid"></i>Junior Explorer</span>':'')+
         '<img class="img" src="'+p['Photo URL']+'" alt="" onclick="openLb('+i+')">'+
         '<div class="pb">'+ dtag(p.Discipline) +
           '<div class="cap">'+(p.Caption||'')+'</div>'+
@@ -340,7 +346,7 @@
       const url=await uploadFile(upFile);
       const res=await fetch('/api/gallery',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
         body:JSON.stringify({url,caption:document.getElementById('ucap').value.trim(),discipline:document.getElementById('udisc').value,
-          cpId:document.getElementById('ucp').value||null,location:document.getElementById('uloc').value.trim()})});
+          cpId:document.getElementById('ucp').value||null,location:document.getElementById('uloc').value.trim(),junior:document.getElementById('ujunior').checked})});
       const d=await res.json(); if(!res.ok) throw new Error(d.error||'Upload failed');
       closeUpload();
       document.getElementById('grid').insertAdjacentHTML('afterbegin','<div class="muted" style="border-style:solid;border-color:var(--green);color:var(--green-dark)">Thanks! Your photo was submitted and will appear once approved.</div>');
