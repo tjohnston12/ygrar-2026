@@ -24,6 +24,8 @@ export default async function handler(req, res) {
     familyFriendly: !!c['Family friendly'],
     flagged: !!c.Flagged,
     flagCount: c['Flag count'] || 0,
+    placedByTeam: c['Placed by team'] || '',
+    photoUrl: c['Photo URL'] || '',
   }));
   return res.status(200).json({ cps });
 }

@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Complete your registration payment to place control points.' });
   }
 
-  const { proofId, name, location, latitude, longitude, difficulty, familyFriendly } = req.body || {};
+  const { proofId, name, location, latitude, longitude, difficulty, familyFriendly, photoUrl } = req.body || {};
   if (!proofId || !name || latitude == null || longitude == null) {
     return res.status(400).json({ error: 'proofId, name, latitude and longitude are required.' });
   }
@@ -29,19 +29,32 @@ export default async function handler(req, res) {
 
   const parentId = (proof.CP || [])[0];
   const parent = parentId ? await findOne('CPs', `RECORD_ID()='${esc(parentId)}'`) : null;
+  const nextChain = parent ? ((parent['Chain position'] || 0) + 1) : null;
+
+  // Single-slot guard: if someone has already taken this slot (pending or live), it's spoken for.
+  if (parent && nextChain != null) {
+    const existing = await findOne('CPs',
+      `AND({Discipline}='${esc(parent.Discipline || '')}', {City}='${esc(parent.City || '')}', {Chain position}=${nextChain}, OR({Status}='Pending', {Status}='Live'))`);
+    if (existing) return res.status(409).json({ error: 'Someone is already placing the next point in this chain — it\'s been taken.' });
+  }
+
+  // Team/racer name to show on the pending placement.
+  const teamName = (me['Team name'] || '').trim() || me['Full name'] || racer.name || 'A racer';
 
   const cp = await create('CPs', {
     'Name': name,
     'Discipline': parent ? (parent.Discipline || '') : '',
-    'Status': 'Live',                       // racer-placed points go live right away
+    'Status': 'Pending',                    // placements are pending review, shown by team name
     'Latitude': parseFloat(latitude),
     'Longitude': parseFloat(longitude),
     'Location description': location || '',
     'Difficulty': difficulty ? parseInt(difficulty, 10) : null,
-    'Chain position': parent ? ((parent['Chain position'] || 0) + 1) : null,
+    'Chain position': nextChain,
     'City': parent ? (parent.City || '') : '',
     'Family friendly': !!familyFriendly,
     'Placed by': [racer.id],
+    'Placed by team': teamName,
+    'Photo URL': photoUrl || '',
   });
 
   return res.status(200).json({ cp });
