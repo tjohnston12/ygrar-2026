@@ -25,6 +25,12 @@ export default async function handler(req, res) {
   const racer = requireAuth(req, res);
   if (!racer) return; // 401 already sent
 
+  // Must have completed registration payment (status set to Active by the Stripe webhook).
+  const me = await findOne('Racers', `RECORD_ID()='${esc(racer.id)}'`);
+  if (!me || me['Registration status'] !== 'Active') {
+    return res.status(403).json({ error: 'Please complete your registration payment before submitting control point proof.' });
+  }
+
   const { cpId, url, latitude, longitude } = req.body || {};
   if (!cpId || !url || latitude == null || longitude == null) {
     return res.status(400).json({ error: 'cpId, url, latitude, longitude required' });

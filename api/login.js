@@ -20,6 +20,6 @@ export default async function handler(req, res) {
   const token = signToken({ id: racer.id, email: racer.Email, name: racer['Full name'], isAdmin: !!racer['Is admin'] });
   return res.status(200).json({
     token,
-    racer: { id: racer.id, name: racer['Full name'], email: racer.Email, isAdmin: !!racer['Is admin'] },
+    racer: { id: racer.id, name: racer['Full name'], email: racer.Email, isAdmin: !!racer['Is admin'], profilePhoto: racer['Profile photo URL'] || '' },
   });
 }

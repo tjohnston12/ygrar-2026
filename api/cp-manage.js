@@ -45,6 +45,9 @@ export default async function handler(req, res) {
     if (f.chain !== undefined) u['Chain position'] = f.chain ? parseInt(f.chain, 10) : null;
     if (f.city !== undefined) u['City'] = f.city;
     if (f.familyFriendly !== undefined) u['Family friendly'] = !!f.familyFriendly;
+    if (f.flagged !== undefined) u['Flagged'] = !!f.flagged;
+    if (f.flagCount !== undefined) u['Flag count'] = f.flagCount;
+    if (f.flagReason !== undefined) u['Flag reason'] = f.flagReason;
     const cp = await update('CPs', id, u);
     return res.status(200).json({ cp });
   }

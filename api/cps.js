@@ -22,6 +22,8 @@ export default async function handler(req, res) {
     chain: c['Chain position'] || null,
     city: c.City || '',
     familyFriendly: !!c['Family friendly'],
+    flagged: !!c.Flagged,
+    flagCount: c['Flag count'] || 0,
   }));
   return res.status(200).json({ cps });
 }
