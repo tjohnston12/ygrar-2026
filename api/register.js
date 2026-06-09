@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     fullName, email, password, phone, type,        // type: Solo / Team captain / Team member
     teamName, emergencyName, emergencyPhone,
     profilePhotoUrl, waiverName,                    // waiver typed-name signature
-    spcaReceiptUrl,                                 // Cloudinary URL of the donation receipt
+    spcaDonated,                                    // honor-system: racer confirms they donated to the SPCA
     cities,                                         // array of city names the racer is competing in
     guardianConsent,                                // true when a parent/guardian signed for youth (under 16)
     children,                                        // array of child names registered under this adult
@@ -43,8 +43,7 @@ export default async function handler(req, res) {
     'Waiver signed': true,
     'Waiver signed at': new Date().toISOString(),
     'Waiver signature name': waiverName,
-    'SPCA receipt URL': spcaReceiptUrl || '',
-    'SPCA receipt status': 'Pending',          // you review within 24h
+    'SPCA donated': !!spcaDonated,             // honor system — racer confirmed their donation
     'Cities': Array.isArray(cities) ? cities.join(', ') : (cities || ''),
     'Guardian consent': !!guardianConsent,
     'Children': childNames.join(', '),
