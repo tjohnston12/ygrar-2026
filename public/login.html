@@ -127,20 +127,20 @@
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if(!res.ok) throw new Error(data.error || 'Login failed');
+      if(!res.ok){ err.textContent = data.error || 'Login failed'; btn.classList.remove('dim'); return; }
       try{
         localStorage.setItem('ygtar_token', data.token);
         localStorage.setItem('ygtar_racer', JSON.stringify(data.racer||{}));
       }catch(e){ /* storage blocked (e.g. preview) — token just won't persist */ }
       window.location.href = next;
     }catch(e){
-      err.textContent = e.message + ' — (works once the app is deployed live).';
+      err.textContent = 'Couldn\u2019t reach the server — please check your connection and try again.';
       btn.classList.remove('dim');
     }
   }
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
 <script>(function(){var t=null,r={};try{t=localStorage.getItem("ygtar_token");r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});var nm=document.getElementById("acctNm"),av=document.getElementById("acctAv");if(nm)nm.textContent=r.name||"My account";if(av){if(r.profilePhoto){av.style.backgroundImage="url("+r.profilePhoto+")";av.textContent="";}else{av.textContent=((r.name||"?").split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("")||"?").toUpperCase();}}}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
-<script src="menu.js"></script>
+<script src="mobile-nav.js"></script>
 </body>
 </html>
