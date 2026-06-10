@@ -5,7 +5,7 @@
 // turn off Vercel's automatic body parser below.
 
 import Stripe from 'stripe';
-import { update, create } from '../lib/airtable.js';
+import { update, create, findOne, esc } from '../lib/airtable.js';
 import { sendEmail } from './send-email.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -58,6 +58,28 @@ export default async function handler(req, res) {
                  ${kidLine}
                  <p>See you out there,<br>Natural Selection Adventure Racing</p>`,
         });
+      }
+    } else if (kind === 'add-cities' && racerId) {
+      // Credit the newly-paid cities to the racer (merge, de-duped) and bump amount paid.
+      const newCities = String(session.metadata?.cities || '')
+        .split('|').map((s) => s.trim()).filter(Boolean);
+      if (newCities.length) {
+        const me = await findOne('Racers', `RECORD_ID()='${esc(racerId)}'`);
+        const owned = String((me && me.Cities) || '').split(',').map((s) => s.trim()).filter(Boolean);
+        const merged = [...new Set([...owned, ...newCities])];
+        const racer = await update('Racers', racerId, {
+          'Cities': merged.join(', '),
+          'Amount paid': ((me && me['Amount paid']) || 0) + (session.amount_total || 0) / 100,
+        });
+        if (session.customer_details?.email) {
+          const first = (racer['Full name'] || '').split(' ')[0] || 'there';
+          await sendEmail({
+            to: session.customer_details.email,
+            subject: 'You added a city to your YCAR 2026 race',
+            html: `<p>Hi ${first}, you're now racing in ${newCities.join(' and ')}. The control points there are unlocked on your map — good luck!</p>
+                   <p>See you out there,<br>Natural Selection Adventure Racing</p>`,
+          });
+        }
       }
     } else if (kind === 'swag') {
       await create('Swag Orders', {

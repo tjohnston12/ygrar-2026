@@ -3,6 +3,8 @@
 // and swag orders (with the 15% racer discount applied before it gets here).
 
 import Stripe from 'stripe';
+import { verifyToken } from '../lib/auth.js';
+import { find, findOne, esc } from '../lib/airtable.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
@@ -41,6 +43,33 @@ export default async function handler(req, res) {
     metadata.adults = String(adults);
     metadata.kids = String(kids);
     metadata.cityCount = String(cityCount);
+  } else if (kind === 'add-cities') {
+    // A logged-in, already-registered racer adds one or more cities at $5 each.
+    // The cities are credited to their account by the Stripe webhook once paid.
+    const viewer = verifyToken(req);
+    if (!viewer || !viewer.id) return res.status(401).json({ error: 'Please log in to add cities.' });
+
+    const me = await findOne('Racers', `RECORD_ID()='${esc(viewer.id)}'`);
+    if (!me) return res.status(404).json({ error: 'Racer not found' });
+
+    const owned = new Set(String(me.Cities || '').split(',').map((s) => s.trim()).filter(Boolean));
+    const active = await find('Cities', { filter: '{Active}' });
+    const valid = new Set(active.map((c) => (c.Name || '').trim()).filter(Boolean));
+
+    const requested = [...new Set((req.body.cities || []).map((c) => String(c).trim()).filter(Boolean))]
+      .filter((c) => valid.has(c) && !owned.has(c));
+
+    if (!requested.length) return res.status(400).json({ error: 'No new valid cities to add.' });
+
+    line_items = [{
+      price_data: {
+        currency: 'cad',
+        product_data: { name: `YCAR 2026 — Add ${requested.length === 1 ? 'city' : 'cities'}: ${requested.join(', ')}` },
+        unit_amount: parseInt(process.env.CITY_PRICE_CENTS || '500', 10),
+      },
+      quantity: requested.length,
+    }];
+    metadata = { kind: 'add-cities', racerId: me.id, cities: requested.join('|') };
   } else if (kind === 'swag') {
     // items: [{ name, amountCents, quantity }]
     line_items = (items || []).map((it) => ({
