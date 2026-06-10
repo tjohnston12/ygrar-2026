@@ -117,6 +117,7 @@
       <select id="cp-city" class="cpcity" onchange="setCity(this.value)"><option value="">All cities</option></select>
     </div>
 
+    <div id="lockedCities" style="display:none;margin-bottom:14px"></div>
     <div id="waitingList" style="display:none;margin-bottom:14px"></div>
 
     <div class="mapwrap">
@@ -129,7 +130,8 @@
 <script>
   const COLORS = { Hiking:'#1D9E75', Biking:'#E0892C', Paddling:'#3E84B8', Sponsored:'#178060', Other:'#5c6b62' };
   const ICONS  = { Hiking:'ti-walk', Biking:'ti-bike', Paddling:'ti-kayak', Sponsored:'ti-star', Other:'ti-flag' };
-  let map, allCps = [], layer, filter = 'all', cityFilter = '', familyOnly = false;
+  let map, allCps = [], layer, filter = 'all', cityFilter = '', familyOnly = false, lockedCities = [];
+  function cpToken(){ try{ return localStorage.getItem('ygtar_token'); }catch(e){ return null; } }
 
   function pinIcon(disc, pending){
     const color = pending ? '#9aa6a0' : (COLORS[disc] || COLORS.Other);
@@ -205,16 +207,64 @@
 
   async function load(){
     initMap();
+    let resp = {};
     try{
-      const { cps } = await (await fetch('/api/cps')).json();
-      allCps = cps || [];
-    }catch(e){ allCps = []; }
-    // populate city dropdown from cities present on CPs
+      const tok = cpToken();
+      const headers = tok ? { 'Authorization':'Bearer '+tok } : {};
+      resp = await (await fetch('/api/cps', { headers })).json();
+    }catch(e){ resp = {}; }
+    allCps = resp.cps || [];
+    lockedCities = resp.locked || [];
+    // populate city dropdown from cities present on (unlocked) CPs
     const sel=document.getElementById('cp-city');
     [...new Set(allCps.map(c=>c.city).filter(Boolean))].sort().forEach(name=>{
       const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o);
     });
+    renderLocked();
     draw();
+  }
+
+  function renderLocked(){
+    const box=document.getElementById('lockedCities');
+    if(!box) return;
+    if(!lockedCities.length){ box.style.display='none'; box.innerHTML=''; return; }
+    const tok = cpToken();
+    box.style.display='block';
+    box.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:var(--color-text-secondary);margin-bottom:8px">'+
+        '<i class="ti ti-lock"></i> More control points in cities you haven\u2019t joined yet</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:10px">'+
+      lockedCities.map(function(l){
+        const safe = String(l.city).replace(/'/g,"\\'");
+        return '<div style="display:flex;align-items:center;gap:12px;background:var(--color-background-primary);'+
+          'border:1px solid var(--color-border-tertiary);border-radius:var(--radius-md);padding:11px 14px">'+
+          '<span style="width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;'+
+            'background:var(--green-soft);color:var(--green)"><i class="ti ti-lock"></i></span>'+
+          '<div><div style="font-weight:700;font-size:14.5px">'+l.city+'</div>'+
+            '<div style="font-size:12.5px;color:var(--color-text-tertiary)">'+l.count+' control point'+(l.count===1?'':'s')+' \u00b7 hidden</div></div>'+
+          '<button onclick="addCity(\''+safe+'\')" style="margin-left:6px;font-family:inherit;font-weight:600;font-size:13px;'+
+            'background:var(--green);color:#fff;border:none;border-radius:var(--radius-pill);padding:8px 14px;cursor:pointer;white-space:nowrap">'+
+            (tok?'Add for $5':'Log in to add')+'</button>'+
+        '</div>';
+      }).join('')+'</div>';
+  }
+
+  async function addCity(city){
+    const tok = cpToken();
+    if(!tok){ window.location.href='login.html?next=control-points.html'; return; }
+    if(!confirm('Add '+city+' to your race for $5? You\u2019ll be taken to secure checkout.')) return;
+    try{
+      const res = await fetch('/api/stripe-checkout',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
+        body: JSON.stringify({ kind:'add-cities', cities:[city],
+          successUrl: location.origin+'/control-points.html?added=1',
+          cancelUrl: location.href })
+      });
+      const data = await res.json();
+      if(!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout');
+      window.location.href = data.url;
+    }catch(e){ alert(e.message || 'Could not start checkout right now.'); }
   }
   load();
 </script>

@@ -172,7 +172,8 @@
   async function loadCps(){
     const list = document.getElementById('cpList');
     try{
-      const { cps } = await (await fetch('/api/cps')).json();
+      const _t = token(); const _h = _t ? { 'Authorization':'Bearer '+_t } : {};
+      const { cps } = await (await fetch('/api/cps', { headers:_h })).json();
       const live = (cps||[]).filter(c => c.status==='Live');
       if(!live.length){ list.innerHTML = '<div class="muted">No control points are live yet — check back when the season opens.</div>'; return; }
       list.innerHTML = live.map(c=>{

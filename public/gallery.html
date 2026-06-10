@@ -331,7 +331,8 @@
     if(!token()){ window.location.href='login.html?next=gallery.html'; return; }
     document.getElementById('uploadOverlay').classList.add('on');
     try{
-      const { cps } = await (await fetch('/api/cps')).json();
+      const _t = token(); const _h = _t ? { 'Authorization':'Bearer '+_t } : {};
+      const { cps } = await (await fetch('/api/cps', { headers:_h })).json();
       const sel=document.getElementById('ucp');
       (cps||[]).filter(c=>c.status==='Live').forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.name+' ('+c.discipline+')'; sel.appendChild(o); });
     }catch(e){}
