@@ -145,7 +145,7 @@
   .btn.dim{opacity:.45;pointer-events:none}
   .btn-ghost{background:transparent;color:var(--color-text-secondary);border:1px solid var(--color-border-secondary);font-weight:600;font-size:15px;padding:11px 22px;border-radius:var(--radius-pill);cursor:pointer}
   .btn-ghost.hide{visibility:hidden}
-  .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
+  .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px;word-break:break-word}
   .status{margin-top:14px;font-size:14px;color:var(--color-text-secondary)}
 
   @media(max-width:860px){
@@ -480,27 +480,49 @@
     document.getElementById('priceBreak').textContent = bits.join(' + ')+(extra?(' + $'+CITY+'×'+extra+' extra city each'):'')+' · first city included';
   }
 
-  // ---- Cloudinary upload (no GPS needed for profile/receipt) ----
+  // ---- read a fetch Response safely ----
+  // Reads the body as text first, then tries JSON. This avoids the iOS Safari
+  // "The string did not match the expected pattern." error that response.json()
+  // throws when the server returns an empty or non-JSON body (e.g. a raw 500),
+  // and lets us show the real HTTP status + body instead.
+  async function readJSON(res){
+    const raw = await res.text();
+    let body = null;
+    if(raw){ try{ body = JSON.parse(raw); }catch(_){ /* non-JSON body */ } }
+    return { ok: res.ok, status: res.status, data: body, raw: raw };
+  }
+
+  // ---- Cloudinary upload (no GPS needed for profile/child photos) ----
   async function uploadFile(file){
-    const sign = await fetch('/api/cloudinary-sign',{method:'POST'}).then(r=>r.json());
+    const signRes = await fetch('/api/cloudinary-sign',{method:'POST'});
+    const sign = await readJSON(signRes);
+    if(!sign.ok) throw new Error('photo signing failed ('+sign.status+'): '+sign.raw.slice(0,140));
+    if(!sign.data || !sign.data.cloudName || !sign.data.apiKey || !sign.data.signature){
+      throw new Error('photo upload not configured — check Cloudinary env vars on Vercel');
+    }
+    const s = sign.data;
     const form = new FormData();
     form.append('file',file);
-    form.append('api_key',sign.apiKey);
-    form.append('timestamp',sign.timestamp);
-    form.append('signature',sign.signature);
-    form.append('folder',sign.folder);
-    const res = await fetch('https://api.cloudinary.com/v1_1/'+sign.cloudName+'/image/upload',{method:'POST',body:form});
-    const out = await res.json();
-    if(out.error) throw new Error(out.error.message);
-    return out.secure_url;
+    form.append('api_key',s.apiKey);
+    form.append('timestamp',s.timestamp);
+    form.append('signature',s.signature);
+    form.append('folder',s.folder);
+    const upRes = await fetch('https://api.cloudinary.com/v1_1/'+s.cloudName+'/image/upload',{method:'POST',body:form});
+    const up = await readJSON(upRes);
+    if(up.data && up.data.error) throw new Error(up.data.error.message);
+    if(!up.data || !up.data.secure_url) throw new Error('cloudinary returned no image url ('+up.status+')');
+    return up.data.secure_url;
   }
 
   // ---- final submit: upload -> register -> checkout ----
   async function submit(){
     const btn = document.getElementById('nextBtn');
     const status = document.getElementById('status');
-    btn.classList.add('dim'); status.textContent = 'Uploading your photos…';
+    btn.classList.add('dim');
+    let stage = 'start';
     try{
+      stage = 'photos';
+      status.textContent = 'Uploading your photos…';
       const profilePhotoUrl = data.profileFile ? await uploadFile(data.profileFile) : '';
 
       // upload each child's photo (if added) and build name+photo list
@@ -510,8 +532,9 @@
         childData.push({ name:c.name.trim(), photo });
       }
 
+      stage = 'account';
       status.textContent = 'Creating your account…';
-      const reg = await fetch('/api/register',{
+      const reg = await readJSON(await fetch('/api/register',{
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           fullName:data.fullName, email:data.email, password:data.password, phone:data.phone,
@@ -519,24 +542,24 @@
           profilePhotoUrl, spcaDonated:!!data.spcaDonated, waiverName:data.waiverName, cities:data.cities, guardianConsent:!!data.guardianConsent,
           children:childData
         })
-      });
-      const regData = await reg.json();
-      if(!reg.ok) throw new Error(regData.error || 'Registration failed');
+      }));
+      if(!reg.ok) throw new Error((reg.data && reg.data.error) || ('register '+reg.status+': '+reg.raw.slice(0,140)));
+      if(!reg.data || !reg.data.racer || !reg.data.racer.id) throw new Error('register returned no racer id ('+reg.status+'): '+reg.raw.slice(0,140));
 
+      stage = 'checkout';
       status.textContent = 'Redirecting to secure payment…';
-      const co = await fetch('/api/stripe-checkout',{
+      const co = await readJSON(await fetch('/api/stripe-checkout',{
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          kind:'registration', racerId:regData.racer.id, adults:data.adults, kids:data.kids, quantity:data.quantity, cityCount:data.cities.length,
+          kind:'registration', racerId:reg.data.racer.id, adults:data.adults, kids:data.kids, quantity:data.quantity, cityCount:data.cities.length,
           successUrl: location.origin+'/?paid=1', cancelUrl: location.href
         })
-      });
-      const coData = await co.json();
-      if(!co.ok || !coData.url) throw new Error(coData.error || 'Could not start checkout');
-      window.location.href = coData.url;
+      }));
+      if(!co.ok || !co.data || !co.data.url) throw new Error((co.data && co.data.error) || ('checkout '+co.status+': '+co.raw.slice(0,140)));
+      window.location.href = co.data.url;
     }catch(e){
       status.textContent='';
-      document.getElementById('err').textContent = e.message + ' — (this completes once the app is deployed live).';
+      document.getElementById('err').textContent = '['+stage+'] '+e.message;
       btn.classList.remove('dim');
     }
   }
@@ -561,6 +584,5 @@
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
 <script>(function(){var t=null,r={};try{t=localStorage.getItem("ygtar_token");r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});var nm=document.getElementById("acctNm"),av=document.getElementById("acctAv");if(nm)nm.textContent=r.name||"My account";if(av){if(r.profilePhoto){av.style.backgroundImage="url("+r.profilePhoto+")";av.textContent="";}else{av.textContent=((r.name||"?").split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("")||"?").toUpperCase();}}}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
-<script src="mobile-nav.js"></script>
 </body>
 </html>
