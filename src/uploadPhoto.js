@@ -57,3 +57,25 @@ export async function uploadPhoto(file) {
 //     headers: { 'Content-Type': 'application/json' },
 //     body: JSON.stringify(result),   // -> your Airtable write happens server-side
 //   });
+async function uploadFile(file){
+  const signRes = await fetch('/api/cloudinary-sign',{method:'POST'});
+  if(!signRes.ok){
+    const t = await signRes.text().catch(()=> '');
+    throw new Error('Photo signing failed ('+signRes.status+'). '+t.slice(0,120));
+  }
+  const sign = await signRes.json();
+  if(!sign || !sign.cloudName || !sign.apiKey || !sign.signature){
+    throw new Error('Photo upload not configured — check Cloudinary env vars on Vercel.');
+  }
+  const form = new FormData();
+  form.append('file', file);
+  form.append('api_key', sign.apiKey);
+  form.append('timestamp', sign.timestamp);
+  form.append('signature', sign.signature);
+  form.append('folder', sign.folder);
+  const res = await fetch('https://api.cloudinary.com/v1_1/'+sign.cloudName+'/image/upload',{method:'POST',body:form});
+  const out = await res.json();
+  if(out.error) throw new Error(out.error.message);
+  if(!out.secure_url) throw new Error('Cloudinary returned no image URL.');
+  return out.secure_url;
+}
