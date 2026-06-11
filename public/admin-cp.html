@@ -60,8 +60,9 @@
   .card h3{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
   .formgrid{display:grid;grid-template-columns:1.4fr 1fr .9fr .9fr;gap:12px}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:5px}
-  .field input,.field select{width:100%;font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary)}
-  .field input:focus,.field select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .field input,.field select,.field textarea{width:100%;font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .field textarea{min-height:78px;resize:vertical;line-height:1.45}
   .btn{display:inline-flex;align-items:center;gap:7px;background:var(--green);color:#fff;font-weight:600;font-size:14px;padding:10px 18px;border-radius:var(--radius-pill);border:none;cursor:pointer;transition:.15s}
   .btn:hover{background:var(--green-dark)}.btn.dim{opacity:.5;pointer-events:none}
   .btn-ghost{background:transparent;color:var(--color-text-secondary);border:1px solid var(--color-border-secondary);font-weight:600;font-size:13.5px;padding:8px 14px;border-radius:var(--radius-pill);cursor:pointer}
@@ -145,7 +146,7 @@
           <div class="field"><label>Longitude</label><input id="f-lng" placeholder="-66.4612"></div>
         </div>
         <div class="formgrid" style="margin-top:12px">
-          <div class="field"><label>Location description</label><input id="f-loc" placeholder="Trailhead, parking lot, etc."></div>
+          <div class="field" style="grid-column:1/-1"><label>Location description</label><textarea id="f-loc" placeholder="Trailhead, parking lot, terrain notes, what to look for, etc."></textarea></div>
           <div class="field"><label>Difficulty</label><select id="f-diff"><option value="">—</option><option value="1">1 · Family friendly</option><option value="2">2 · Easy</option><option value="3">3 · Moderate</option><option value="4">4 · Hard</option><option value="5">5 · Expert</option></select></div>
           <div class="field"><label>Chain #</label><input id="f-chain" type="number" min="1" placeholder="1"></div>
           <div class="field"><label>Status</label><select id="f-status"><option>Live</option><option>Pending</option></select></div>
@@ -190,7 +191,7 @@
       <div class="field"><label>Discipline</label><select id="e-disc"><option>Hiking</option><option>Biking</option><option>Paddling</option><option>Sponsored</option></select></div>
       <div class="field"><label>Chain #</label><input id="e-chain" type="number" min="1"></div>
     </div>
-    <div class="field" style="margin:12px 0"><label>Location description</label><input id="e-loc"></div>
+    <div class="field" style="margin:12px 0"><label>Location description</label><textarea id="e-loc"></textarea></div>
     <div class="mrow2">
       <div class="field"><label>Latitude</label><input id="e-lat"></div>
       <div class="field"><label>Longitude</label><input id="e-lng"></div>
