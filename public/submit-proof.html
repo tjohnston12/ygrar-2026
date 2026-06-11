@@ -161,7 +161,7 @@
 <script>
   const COLOR = { Hiking:'--hike', Biking:'--bike', Paddling:'--paddle', Sponsored:'--green' };
   const ICON  = { Hiking:'ti-walk', Biking:'ti-bike', Paddling:'ti-kayak', Sponsored:'ti-star' };
-  const state = { cpId:null, file:null, gps:null };
+  const state = { cpId:null, file:null, gps:null, capturedAt:null };
 
   function token(){ try{ return localStorage.getItem('ygtar_token'); }catch(e){ return null; } }
   function pips(diff, varname){
@@ -208,6 +208,13 @@
         gps.innerHTML='<i class="ti ti-map-pin-off"></i> No GPS data in this photo — it can\'t be verified.';
       }
     }catch(e){ state.gps=null; gps.className='gps bad'; gps.style.display='block'; gps.textContent='Could not read photo location.'; }
+    // Capture time from the photo's EXIF — this is the racer's true "arrival" time,
+    // used as the claim time so a delayed upload (no signal at the CP) isn't penalised.
+    try{
+      const meta = await exifr.parse(f, ['DateTimeOriginal','CreateDate','DateTimeDigitized']);
+      const dt = meta && (meta.DateTimeOriginal || meta.CreateDate || meta.DateTimeDigitized);
+      state.capturedAt = dt ? new Date(dt).toISOString() : null;
+    }catch(e){ state.capturedAt = null; }
     refreshBtn();
   });
 
@@ -287,7 +294,7 @@
       const url = await uploadFile(state.file);
       const res = await fetch('/api/save-cp-photo',{
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
-        body: JSON.stringify({ cpId:state.cpId, url, latitude:state.gps.latitude, longitude:state.gps.longitude })
+        body: JSON.stringify({ cpId:state.cpId, url, latitude:state.gps.latitude, longitude:state.gps.longitude, capturedAt:state.capturedAt })
       });
       const data = await res.json();
       if(!res.ok) throw new Error(data.error||'Submission failed');
