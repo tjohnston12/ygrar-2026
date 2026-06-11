@@ -76,11 +76,6 @@
   .cpic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px;flex-shrink:0}
   .cpname{font-weight:700;font-size:15px}
   .cpmeta{font-size:12.5px;color:var(--color-text-tertiary);margin-top:2px}
-  .cpthumb{width:46px;height:46px;border-radius:8px;object-fit:cover;float:left;margin:1px 11px 4px 0;cursor:pointer;border:1px solid var(--color-border-tertiary)}
-  .flagreason{font-size:12px;color:var(--danger);margin-top:4px;font-style:italic;clear:both}
-  .e-photo-wrap{margin:12px 0}
-  .e-photo-preview{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-md);border:1px solid var(--color-border-tertiary);margin-bottom:8px}
-  .e-photo-none{font-size:13px;color:var(--color-text-tertiary);padding:14px;text-align:center;border:1px dashed var(--color-border-secondary);border-radius:var(--radius-md);margin-bottom:8px}
   .badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:var(--radius-pill);margin-left:8px}
   .b-live{background:var(--green-soft);color:var(--green-dark)}.b-pending{background:#fbeedd;color:#a96518}.b-removed{background:#f0e7e4;color:var(--danger)}
   .ctrls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -157,6 +152,14 @@
           <div class="field"><label>City</label><select id="f-city"><option value="">—</option></select></div>
         </div>
         <label class="ckline" style="margin-top:12px;display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer"><input type="checkbox" id="f-family" style="width:17px;height:17px;accent-color:var(--green)"> Family-friendly (easy, kid-appropriate)</label>
+        <div class="field" style="margin-top:14px">
+          <label>Photo <span style="color:var(--color-text-tertiary);font-weight:400">(optional)</span></label>
+          <div id="f-photo-drop" onclick="document.getElementById('f-photo').click()" style="border:1.5px dashed var(--color-border-secondary,rgba(22,32,27,.14));border-radius:var(--radius-md,11px);padding:18px;text-align:center;cursor:pointer;color:var(--color-text-secondary);font-size:14px">
+            <i class="ti ti-camera-plus" style="font-size:22px;display:block;margin-bottom:6px"></i>Tap to add a photo of this control point
+          </div>
+          <input id="f-photo" type="file" accept="image/*" hidden>
+          <img id="f-photo-thumb" style="display:none;max-height:130px;border-radius:var(--radius-md,11px);margin-top:10px">
+        </div>
         <div style="display:flex;align-items:center;gap:14px;margin-top:16px">
           <button class="btn" id="addBtn" onclick="addCp()"><i class="ti ti-plus"></i>Add control point</button>
           <span class="status" id="addStatus"></span>
@@ -193,17 +196,6 @@
       <div class="field"><label>Longitude</label><input id="e-lng"></div>
     </div>
     <div class="field" style="margin:12px 0"><label>City</label><select id="e-city"><option value="">—</option></select></div>
-    <div class="mrow2">
-      <div class="field"><label>Difficulty</label><select id="e-diff"><option value="">—</option><option value="1">1 · Family friendly</option><option value="2">2 · Easy</option><option value="3">3 · Moderate</option><option value="4">4 · Hard</option><option value="5">5 · Expert</option></select></div>
-      <div class="field"><label>Status</label><select id="e-status"><option>Live</option><option>Pending</option><option>Removed</option></select></div>
-    </div>
-    <div class="field" style="margin:12px 0"><label>Placed by team <span style="color:var(--color-text-tertiary);font-weight:400">(set when a racer places this CP)</span></label><input id="e-team" placeholder="—"></div>
-    <div class="e-photo-wrap">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:5px">Racer photo</label>
-      <img id="e-photo-preview" class="e-photo-preview" style="display:none" onclick="window.open(document.getElementById('e-photo').value,'_blank')">
-      <div id="e-photo-none" class="e-photo-none" style="display:none">No photo on this control point.</div>
-      <input id="e-photo" placeholder="Photo URL — paste to replace, or clear to remove" oninput="syncPhotoPreview()">
-    </div>
     <label class="ckline" style="display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--color-text-secondary);cursor:pointer;margin-bottom:4px"><input type="checkbox" id="e-family" style="width:17px;height:17px;accent-color:var(--green)"> Family-friendly (easy, kid-appropriate)</label>
     <div class="mfoot"><button class="btn-ghost" onclick="closeEdit()">Cancel</button><button class="btn" id="saveBtn" onclick="saveEdit()">Save changes</button></div>
   </div>
@@ -215,7 +207,6 @@
   function token(){ try{return localStorage.getItem('ygtar_token');}catch(e){return null;} }
   function racer(){ try{return JSON.parse(localStorage.getItem('ygtar_racer')||'{}');}catch(e){return {};} }
   function authHdr(){ return {'Content-Type':'application/json','Authorization':'Bearer '+token()}; }
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   let cps=[], filter='all';
 
   function diffLabel(d){ return {1:'Family friendly',2:'Easy',3:'Moderate',4:'Hard',5:'Expert'}[d]||'—'; }
@@ -247,13 +238,9 @@
       const statOpts=['Live','Pending','Removed'].map(s=>'<option'+(c.status===s?' selected':'')+'>'+s+'</option>').join('');
       return '<div class="cprow'+(c.status==='Removed'?' removed':'')+'">'+
         '<div class="cpic" style="background:color-mix(in srgb,var('+v+') 14%,white);color:var('+v+')"><i class="ti '+(ICON[c.discipline]||'ti-flag')+'"></i></div>'+
-        '<div>'+
-          (c.photoUrl?'<img class="cpthumb" src="'+c.photoUrl+'" alt="CP photo" title="Click to view full size" onclick="window.open(\''+c.photoUrl+'\',\'_blank\')">':'')+
-          '<div class="cpname">'+c.name+statusBadge(c.status)+(c.familyFriendly?'<span class="badge" style="background:var(--green-soft);color:var(--green-dark)">Family</span>':'')+(c.flagged?'<span class="badge" style="background:#f7e0db;color:var(--danger)">⚑ Flagged'+(c.flagCount>1?(' ×'+c.flagCount):'')+'</span>':'')+'</div>'+
+        '<div><div class="cpname">'+c.name+statusBadge(c.status)+(c.familyFriendly?'<span class="badge" style="background:var(--green-soft);color:var(--green-dark)">Family</span>':'')+(c.flagged?'<span class="badge" style="background:#f7e0db;color:var(--danger)">⚑ Flagged'+(c.flagCount>1?(' ×'+c.flagCount):'')+'</span>':'')+'</div>'+
           '<div class="cpmeta">'+c.discipline+(c.city?(' · '+c.city):'')+(c.chain?(' · chain #'+c.chain):'')+(c.placedByTeam?(' · by '+c.placedByTeam):'')+(c.location?(' · '+c.location):'')+
-          (c.lat!=null?(' · '+Number(c.lat).toFixed(4)+', '+Number(c.lng).toFixed(4)):'')+' · '+diffLabel(c.difficulty)+'</div>'+
-          (c.flagged&&c.flagReason?'<div class="flagreason">⚑ Flag reason: '+esc(c.flagReason)+'</div>':'')+
-          '</div>'+
+          (c.lat!=null?(' · '+Number(c.lat).toFixed(4)+', '+Number(c.lng).toFixed(4)):'')+' · '+diffLabel(c.difficulty)+'</div></div>'+
         '<div class="ctrls">'+
           (c.flagged?'<button class="iconbtn" title="Clear flag" onclick="clearFlag(\''+c.id+'\')" style="color:var(--danger);border-color:var(--danger)"><i class="ti ti-flag-off"></i></button>':'')+
           '<select title="Difficulty" onchange="quick(\''+c.id+'\',\'difficulty\',this.value)"><option value="">D—</option>'+diffOpts+'</select>'+
@@ -279,6 +266,30 @@
     }catch(e){}
   }
 
+  // ---- seed photo (optional): preview here, upload to Cloudinary on add ----
+  let seedPhotoFile = null;
+  document.getElementById('f-photo').addEventListener('change', function(){
+    const f=this.files[0]; if(!f) return;
+    seedPhotoFile=f;
+    document.getElementById('f-photo-drop').innerHTML='<i class="ti ti-check" style="font-size:22px;display:block;margin-bottom:6px;color:var(--green)"></i>'+f.name;
+    const t=document.getElementById('f-photo-thumb'); t.src=URL.createObjectURL(f); t.style.display='block';
+  });
+  function resetSeedPhoto(){
+    seedPhotoFile=null;
+    document.getElementById('f-photo').value='';
+    document.getElementById('f-photo-drop').innerHTML='<i class="ti ti-camera-plus" style="font-size:22px;display:block;margin-bottom:6px"></i>Tap to add a photo of this control point';
+    const t=document.getElementById('f-photo-thumb'); t.style.display='none'; t.src='';
+  }
+  async function uploadSeedPhoto(file){
+    const sign=await (await fetch('/api/cloudinary-sign',{method:'POST'})).json();
+    const form=new FormData();
+    form.append('file',file); form.append('api_key',sign.apiKey); form.append('timestamp',sign.timestamp);
+    form.append('signature',sign.signature); form.append('folder',sign.folder);
+    const out=await (await fetch('https://api.cloudinary.com/v1_1/'+sign.cloudName+'/image/upload',{method:'POST',body:form})).json();
+    if(out.error) throw new Error(out.error.message);
+    return out.secure_url;
+  }
+
   async function addCp(){
     const st=document.getElementById('addStatus'); const btn=document.getElementById('addBtn');
     const fields={ name:document.getElementById('f-name').value.trim(), discipline:document.getElementById('f-disc').value,
@@ -289,10 +300,12 @@
     if(!fields.name||!fields.lat||!fields.lng){ st.className='status bad'; st.textContent='Name, latitude and longitude are required.'; return; }
     btn.classList.add('dim');
     try{
+      if(seedPhotoFile){ st.className='status'; st.textContent='Uploading photo…'; fields.photoUrl=await uploadSeedPhoto(seedPhotoFile); }
       const res=await fetch('/api/cp-manage',{method:'POST',headers:authHdr(),body:JSON.stringify({action:'create',fields})});
       const d=await res.json(); if(!res.ok) throw new Error(d.error||'Failed');
       st.className='status ok'; st.textContent='Added "'+fields.name+'".';
       ['f-name','f-lat','f-lng','f-loc','f-chain'].forEach(i=>document.getElementById(i).value='');
+      resetSeedPhoto();
       load();
     }catch(e){ st.className='status bad'; st.textContent=e.message+' — (works once deployed live).'; }
     btn.classList.remove('dim');
@@ -308,19 +321,8 @@
     document.getElementById('e-lat').value=c.lat!=null?c.lat:'';
     document.getElementById('e-lng').value=c.lng!=null?c.lng:'';
     document.getElementById('e-city').value=c.city||'';
-    document.getElementById('e-diff').value=c.difficulty||'';
-    document.getElementById('e-status').value=c.status||'Live';
-    document.getElementById('e-team').value=c.placedByTeam||'';
-    document.getElementById('e-photo').value=c.photoUrl||'';
-    syncPhotoPreview();
     document.getElementById('e-family').checked=!!c.familyFriendly;
     document.getElementById('editOverlay').classList.add('on');
-  }
-  function syncPhotoPreview(){
-    const url=document.getElementById('e-photo').value.trim();
-    const img=document.getElementById('e-photo-preview'), none=document.getElementById('e-photo-none');
-    if(url){ img.src=url; img.style.display='block'; none.style.display='none'; }
-    else { img.style.display='none'; none.style.display='block'; }
   }
   function closeEdit(){ document.getElementById('editOverlay').classList.remove('on'); }
   async function saveEdit(){
@@ -328,9 +330,7 @@
     const fields={ name:document.getElementById('e-name').value.trim(), discipline:document.getElementById('e-disc').value,
       chain:document.getElementById('e-chain').value, location:document.getElementById('e-loc').value.trim(),
       lat:document.getElementById('e-lat').value.trim(), lng:document.getElementById('e-lng').value.trim(),
-      city:document.getElementById('e-city').value, familyFriendly:document.getElementById('e-family').checked,
-      difficulty:document.getElementById('e-diff').value, status:document.getElementById('e-status').value,
-      placedByTeam:document.getElementById('e-team').value.trim(), photoUrl:document.getElementById('e-photo').value.trim() };
+      city:document.getElementById('e-city').value, familyFriendly:document.getElementById('e-family').checked };
     const btn=document.getElementById('saveBtn'); btn.classList.add('dim');
     try{
       const res=await fetch('/api/cp-manage',{method:'POST',headers:authHdr(),body:JSON.stringify({action:'update',id,fields})});
@@ -355,6 +355,6 @@
   else { loadCities(); load(); }
 </script>
 <script>(function(){var t=null,r={};try{t=localStorage.getItem("ygtar_token");r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});var nm=document.getElementById("acctNm"),av=document.getElementById("acctAv");if(nm)nm.textContent=r.name||"My account";if(av){if(r.profilePhoto){av.style.backgroundImage="url("+r.profilePhoto+")";av.textContent="";}else{av.textContent=((r.name||"?").split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("")||"?").toUpperCase();}}}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
-<script src="menu.js"></script>
+<script src="mobile-nav.js"></script>
 </body>
 </html>
