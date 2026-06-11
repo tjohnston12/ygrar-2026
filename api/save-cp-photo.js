@@ -19,6 +19,18 @@ function distanceMetres(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+// The claim time is the photo's capture time when we trust it, falling back to
+// "now" (submission time). Backstop against a wrong/spoofed device clock: never
+// accept a capture time in the future (allow 2 min of skew).
+function claimTimeFrom(capturedAt) {
+  const now = Date.now();
+  if (capturedAt) {
+    const t = Date.parse(capturedAt);
+    if (!Number.isNaN(t) && t <= now + 2 * 60 * 1000) return new Date(t).toISOString();
+  }
+  return new Date(now).toISOString();
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -31,10 +43,12 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Please complete your registration payment before submitting control point proof.' });
   }
 
-  const { cpId, url, latitude, longitude } = req.body || {};
+  const { cpId, url, latitude, longitude, capturedAt } = req.body || {};
   if (!cpId || !url || latitude == null || longitude == null) {
     return res.status(400).json({ error: 'cpId, url, latitude, longitude required' });
   }
+
+  const claimTime = claimTimeFrom(capturedAt);
 
   const cp = await findOne('CPs', `RECORD_ID()='${esc(cpId)}'`);
   if (!cp) return res.status(404).json({ error: 'Control point not found' });
@@ -50,6 +64,7 @@ export default async function handler(req, res) {
     'Longitude': longitude,
     'Distance (m)': Math.round(metres),
     'Status': verified ? 'Verified' : 'Rejected',
+    'Captured at': claimTime,
     'Submitted at': new Date().toISOString(),
   });
 
@@ -58,19 +73,35 @@ export default async function handler(req, res) {
   // Placing fills it in (-> Live); declining removes it; until then it shows as waiting.
   let earnedPlacement = false, placeholderId = null;
   if (verified) {
-    await update('CPs', cpId, { 'Last verified at': new Date().toISOString() });
+    await update('CPs', cpId, { 'Last verified at': claimTime });
 
+    const teamName = (me['Team name'] || '').trim() || me['Full name'] || racer.name || 'A racer';
     const nextChain = (cp['Chain position'] || 0) + 1;
     const slot = `AND({Discipline}='${esc(cp.Discipline || '')}', {City}='${esc(cp.City || '')}', {Chain position}=${nextChain}, OR({Status}='Pending', {Status}='Live'))`;
     const existing = await findOne('CPs', slot);
 
     if (existing) {
-      // Slot already spoken for. It's still yours to place if you're the holder and it hasn't gone live.
-      if (existing.Status === 'Pending' && (existing['Placed by'] || []).includes(racer.id)) {
-        earnedPlacement = true; placeholderId = existing.id;
+      // Slot already spoken for. Only contestable while it's still Pending (not yet Live).
+      if (existing.Status === 'Pending') {
+        const heldByMe = (existing['Placed by'] || []).includes(racer.id);
+        if (heldByMe) {
+          earnedPlacement = true; placeholderId = existing.id;
+        } else {
+          // Fair play: whoever physically arrived first (earliest capture time) keeps the
+          // placement, even if a slower-signal racer reached it first but submitted later.
+          const heldSince = Date.parse(existing['Reserved at'] || '') || Infinity;
+          if (Date.parse(claimTime) < heldSince) {
+            await update('CPs', existing.id, {
+              'Placed by': [racer.id],
+              'Placed by team': teamName,
+              'Reserved at': claimTime,
+            });
+            earnedPlacement = true; placeholderId = existing.id;
+          }
+        }
       }
+      // If it's already Live, the next CP physically exists — nothing to reassign.
     } else {
-      const teamName = (me['Team name'] || '').trim() || me['Full name'] || racer.name || 'A racer';
       const ph = await create('CPs', {
         'Name': 'Awaiting placement',
         'Discipline': cp.Discipline || '',
@@ -79,6 +110,7 @@ export default async function handler(req, res) {
         'Status': 'Pending',
         'Placed by': [racer.id],
         'Placed by team': teamName,
+        'Reserved at': claimTime,
       });
       earnedPlacement = true; placeholderId = ph.id;
     }

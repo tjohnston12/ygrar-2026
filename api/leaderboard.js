@@ -27,14 +27,19 @@ export default async function handler(req, res) {
     if (!racerId || !cpId) continue;
     if (city && cpCity[cpId] !== city) continue;
     const disc = cpDiscipline[cpId] || 'Other';
-    if (!table[racerId]) table[racerId] = { total: 0, Hiking: 0, Biking: 0, Paddling: 0 };
+    if (!table[racerId]) table[racerId] = { total: 0, Hiking: 0, Biking: 0, Paddling: 0, lastTs: 0 };
     table[racerId].total += 1;
-    if (table[racerId][disc] != null) table[racerId][disc] += 1;
+    if (table[racerId][disc] != null && disc !== 'lastTs') table[racerId][disc] += 1;
+    // Capture time = true arrival time (falls back to submission time on older proofs).
+    const ts = Date.parse(p['Captured at'] || p['Submitted at'] || '') || 0;
+    if (ts > table[racerId].lastTs) table[racerId].lastTs = ts;
   }
 
   const standings = Object.entries(table)
     .map(([racerId, s]) => ({ name: racerName[racerId] || 'Unknown', ...s }))
-    .sort((a, b) => b.total - a.total);
+    // Most points first; ties go to whoever reached their last CP earliest.
+    .sort((a, b) => (b.total - a.total) || (a.lastTs - b.lastTs))
+    .map(({ lastTs, ...rest }) => rest); // don't leak the raw timestamp;
 
   return res.status(200).json({ standings, city });
 }
