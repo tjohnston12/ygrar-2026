@@ -22,6 +22,15 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'This slot isn\'t yours to place.' });
   }
 
+  // #2 — only place in a city you're registered in (the placeholder inherits the parent CP's city).
+  if (ph.City) {
+    const me = await findOne('Racers', `RECORD_ID()='${esc(racer.id)}'`);
+    const myCities = new Set(String((me && me.Cities) || '').split(',').map((s) => s.trim()).filter(Boolean));
+    if (!myCities.has(ph.City)) {
+      return res.status(403).json({ error: `You're not registered in ${ph.City}, so you can't place control points there.` });
+    }
+  }
+
   if (action === 'decline') {
     await update('CPs', cpId, { 'Status': 'Removed' });
     return res.status(200).json({ declined: true });

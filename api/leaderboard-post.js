@@ -25,20 +25,25 @@ export default async function handler(req, res) {
   const cpCity = Object.fromEntries(cps.map((c) => [c.id, c.City || '']));
   const racerName = Object.fromEntries(racers.map((r) => [r.id, r['Full name']]));
 
-  const table = {};
+  // One point per racer per CP: count DISTINCT claimed CPs (claim = earliest visit).
+  const byRacer = {}; // racerId -> Map(cpId -> earliest ts)
   for (const p of proofs) {
     const racerId = (p.Racer || [])[0];
     const cpId = (p.CP || [])[0];
     if (!racerId || !cpId) continue;
     if (city && cpCity[cpId] !== city) continue;
-    if (!table[racerId]) table[racerId] = { total: 0, lastTs: 0 };
-    table[racerId].total += 1;
     const ts = Date.parse(p['Captured at'] || p['Submitted at'] || '') || 0;
-    if (ts > table[racerId].lastTs) table[racerId].lastTs = ts;
+    const r = byRacer[racerId] || (byRacer[racerId] = { cps: new Map() });
+    const prev = r.cps.get(cpId);
+    if (prev === undefined || ts < prev) r.cps.set(cpId, ts);
   }
 
-  const standings = Object.entries(table)
-    .map(([racerId, s]) => ({ name: racerName[racerId] || 'Unknown', total: s.total, lastTs: s.lastTs }))
+  const standings = Object.entries(byRacer)
+    .map(([racerId, r]) => {
+      let total = 0, lastTs = 0;
+      for (const ts of r.cps.values()) { total += 1; if (ts > lastTs) lastTs = ts; }
+      return { name: racerName[racerId] || 'Unknown', total, lastTs };
+    })
     .sort((a, b) => (b.total - a.total) || (a.lastTs - b.lastTs))
     .slice(0, top)
     .map((s, i) => ({ rank: i + 1, name: s.name, total: s.total }));

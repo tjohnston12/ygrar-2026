@@ -3,7 +3,7 @@
 // photo's GPS. Here we check the coordinates are close enough to the CP, then
 // record the proof. If verified, this racer earns the right to place the next CP.
 
-import { create, findOne, update, esc } from '../lib/airtable.js';
+import { create, find, findOne, update, esc } from '../lib/airtable.js';
 import { requireAuth } from '../lib/auth.js';
 
 const MATCH_METRES = 75; // how close the photo's GPS must be to count
@@ -52,6 +52,26 @@ export default async function handler(req, res) {
 
   const cp = await findOne('CPs', `RECORD_ID()='${esc(cpId)}'`);
   if (!cp) return res.status(404).json({ error: 'Control point not found' });
+
+  // #2 — must be registered in this CP's city to claim it (blank-city CPs stay open to all).
+  const myCities = new Set(String(me.Cities || '').split(',').map((s) => s.trim()).filter(Boolean));
+  if (cp.City && !myCities.has(cp.City)) {
+    return res.status(403).json({ error: `You're not registered in ${cp.City}. Add that city from the Control points page to claim control points there.` });
+  }
+
+  // #1 — one point per racer per CP. If this racer already has a verified visit to this
+  // CP, don't create a duplicate or re-trigger placement; it only counts once.
+  const verifiedProofs = await find('Proof Submissions', { filter: "{Status}='Verified'" });
+  const alreadyClaimed = verifiedProofs.some(
+    (p) => (p.Racer || [])[0] === racer.id && (p.CP || [])[0] === cpId
+  );
+  if (alreadyClaimed) {
+    return res.status(200).json({
+      verified: true,
+      alreadyClaimed: true,
+      message: "You've already claimed this control point — it only counts once.",
+    });
+  }
 
   const metres = distanceMetres(latitude, longitude, cp.Latitude, cp.Longitude);
   const verified = metres <= MATCH_METRES;

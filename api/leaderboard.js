@@ -20,23 +20,33 @@ export default async function handler(req, res) {
   // Optional ?city= filter — only count CPs in that city.
   const city = (req.query && req.query.city) ? String(req.query.city) : '';
 
-  const table = {};
+  // One point per racer per CP: collect each racer's DISTINCT claimed CPs.
+  // A CP's claim time is the racer's earliest verified visit to it.
+  const byRacer = {}; // racerId -> Map(cpId -> earliest claim ts)
   for (const p of proofs) {
     const racerId = (p.Racer || [])[0];
     const cpId = (p.CP || [])[0];
     if (!racerId || !cpId) continue;
     if (city && cpCity[cpId] !== city) continue;
-    const disc = cpDiscipline[cpId] || 'Other';
-    if (!table[racerId]) table[racerId] = { total: 0, Hiking: 0, Biking: 0, Paddling: 0, lastTs: 0 };
-    table[racerId].total += 1;
-    if (table[racerId][disc] != null && disc !== 'lastTs') table[racerId][disc] += 1;
-    // Capture time = true arrival time (falls back to submission time on older proofs).
     const ts = Date.parse(p['Captured at'] || p['Submitted at'] || '') || 0;
-    if (ts > table[racerId].lastTs) table[racerId].lastTs = ts;
+    const r = byRacer[racerId] || (byRacer[racerId] = { cps: new Map() });
+    const prev = r.cps.get(cpId);
+    if (prev === undefined || ts < prev) r.cps.set(cpId, ts);
   }
 
-  const standings = Object.entries(table)
-    .map(([racerId, s]) => ({ name: racerName[racerId] || 'Unknown', ...s }))
+  const standings = Object.entries(byRacer)
+    .map(([racerId, r]) => {
+      let total = 0, Hiking = 0, Biking = 0, Paddling = 0, lastTs = 0;
+      for (const [cpId, ts] of r.cps) {
+        total += 1;
+        const disc = cpDiscipline[cpId] || 'Other';
+        if (disc === 'Hiking') Hiking += 1;
+        else if (disc === 'Biking') Biking += 1;
+        else if (disc === 'Paddling') Paddling += 1;
+        if (ts > lastTs) lastTs = ts;
+      }
+      return { name: racerName[racerId] || 'Unknown', total, Hiking, Biking, Paddling, lastTs };
+    })
     // Most points first; ties go to whoever reached their last CP earliest.
     .sort((a, b) => (b.total - a.total) || (a.lastTs - b.lastTs))
     .map(({ lastTs, ...rest }) => rest); // don't leak the raw timestamp;
