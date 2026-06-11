@@ -306,8 +306,8 @@
       <!-- STEP 5 — SPCA -->
       <div class="wstep" data-step="4">
         <h2>SPCA donation</h2>
-        <p class="lead">Entry includes a donation to your local SPCA — any amount you choose.</p>
-        <div class="info-box">Please make a donation of any amount to the <b>SPCA</b> before the race. We run this on the honor system — just check the box below to confirm. Thanks for supporting the animals! 🐾</div>
+        <p class="lead">This is separate from your registration fee — we simply ask every racer to donate directly to their local SPCA, in any amount you choose.</p>
+        <div class="info-box">Make a donation of any amount <b>directly to the SPCA</b> before the race. It goes straight to them — it isn't collected by us and isn't part of your registration fee. We run this on the honor system, so just check the box below to confirm. Thanks for supporting the animals! 🐾</div>
         <label class="check-row" style="display:flex;align-items:flex-start;gap:11px;cursor:pointer;padding:14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--green-soft)">
           <input type="checkbox" id="spca-donated" style="width:18px;height:18px;margin-top:1px;accent-color:var(--green);flex:none">
           <span style="font-size:15px;color:var(--color-text-secondary)">I confirm I have made (or will make) a donation to the SPCA.</span>
@@ -534,7 +534,7 @@
     document.getElementById('priceBreak').textContent = bits.join(' + ')+(extra?(' + $'+CITY+'×'+extra+' extra city each'):'')+' · first city included';
   }
 
-  // ---- Cloudinary upload (no GPS needed for profile/receipt) ----
+  // ---- Cloudinary upload (no GPS needed for profile photo) ----
   async function uploadFile(file){
     const sign = await fetch('/api/cloudinary-sign',{method:'POST'}).then(r=>r.json());
     const form = new FormData();
