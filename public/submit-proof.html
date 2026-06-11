@@ -297,7 +297,17 @@
         body: JSON.stringify({ cpId:state.cpId, url, latitude:state.gps.latitude, longitude:state.gps.longitude, capturedAt:state.capturedAt })
       });
       const data = await res.json();
-      if(!res.ok) throw new Error(data.error||'Submission failed');
+      if(!res.ok){
+        // Real server error (e.g. not registered in this city) — show it plainly.
+        result.className='result lose'; result.style.display='block';
+        result.innerHTML='<h3>Can\u2019t claim this one</h3><p>'+(data.error||'Submission failed')+'</p>';
+        btn.classList.remove('dim'); return;
+      }
+      if(data.alreadyClaimed){
+        result.className='result win'; result.style.display='block';
+        result.innerHTML='<h3>Already claimed ✓</h3><p>You\u2019ve already got this control point — it only counts once. On to the next one!</p>';
+        btn.classList.remove('dim'); return;
+      }
       if(data.verified){
         result.className='result win'; result.style.display='block';
         if(data.earnedPlacement && data.placeholderId){
