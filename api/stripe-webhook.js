@@ -90,6 +90,26 @@ export default async function handler(req, res) {
         'Ordered at': new Date().toISOString(),
       });
     }
+  } else if (event.type === 'checkout.session.expired') {
+    // The racer started registering but never completed payment within Stripe's
+    // window. Nudge them to come back and finish — but only if they're still unpaid.
+    const session = event.data.object;
+    const { kind, racerId } = session.metadata || {};
+    if (kind === 'registration' && racerId) {
+      const racer = await findOne('Racers', `RECORD_ID()='${esc(racerId)}'`);
+      if (racer && racer['Registration status'] === 'Pending payment' && racer['Email']) {
+        const first = (racer['Full name'] || '').split(' ')[0] || 'there';
+        await sendEmail({
+          to: racer['Email'],
+          subject: "Your YCAR 2026 registration didn't finish",
+          html: `<p>Hi ${first}, it looks like your registration payment didn't go through, so you're not signed up for the Your Choice Adventure Race yet.</p>
+                 <p>No worries — you can pick up right where you left off and finish in a minute:</p>
+                 <p><a href="https://yourchoicear.com/register.html">Complete your registration &rarr;</a></p>
+                 <p>If you ran into trouble or this was a mistake, just reply to this email.</p>
+                 <p>Hope to see you out there,<br>Natural Selection Adventure Racing</p>`,
+        });
+      }
+    }
   }
 
   return res.status(200).json({ received: true });
