@@ -145,7 +145,7 @@
   .btn.dim{opacity:.45;pointer-events:none}
   .btn-ghost{background:transparent;color:var(--color-text-secondary);border:1px solid var(--color-border-secondary);font-weight:600;font-size:15px;padding:11px 22px;border-radius:var(--radius-pill);cursor:pointer}
   .btn-ghost.hide{visibility:hidden}
-  .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px;word-break:break-word}
+  .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
   .status{margin-top:14px;font-size:14px;color:var(--color-text-secondary)}
 
   @media(max-width:860px){
@@ -225,9 +225,22 @@
           </div>
         </div>
         <div id="team-fields" style="display:none;margin-top:18px">
-          <div class="field"><label>Team name</label><input id="teamName" placeholder="e.g. Trail Blazers"></div>
-          <label class="ckline"><input type="checkbox" id="isCaptain"> I'm the team captain (creating this team)</label>
-          <div class="muted" style="margin-top:6px">Joining a team that already exists? Enter the same team name and leave this unchecked.</div>
+          <div class="field">
+            <label>Are you starting a team or joining one?</label>
+            <div class="choices" style="grid-template-columns:1fr 1fr">
+              <div class="choice sel" id="tm-create" onclick="pickTeamMode('create')"><i class="ti ti-flag-plus"></i><h3>Start a team</h3><p>Create a new team name.</p></div>
+              <div class="choice" id="tm-join" onclick="pickTeamMode('join')"><i class="ti ti-users-plus"></i><h3>Join a team</h3><p>Pick from existing teams.</p></div>
+            </div>
+          </div>
+          <div class="field" id="tm-create-field">
+            <label>New team name</label>
+            <input id="teamNameNew" placeholder="e.g. Trail Blazers">
+          </div>
+          <div class="field" id="tm-join-field" style="display:none">
+            <label>Choose your team</label>
+            <select id="teamSelect"><option value="">Loading teams…</option></select>
+            <div class="muted" id="noTeamsMsg" style="margin-top:6px;display:none">No teams have been created yet — pick “Start a team” above to create the first one.</div>
+          </div>
         </div>
         <div class="field" style="margin-top:18px">
           <label>Racing with your kids? Add each child under 16 <span style="color:var(--color-text-tertiary);font-weight:400">($5 each)</span></label>
@@ -328,7 +341,7 @@
   function namedKids(){ return data.children.filter(c=>c.name.trim()).length; }
   function total(){ return data.adults*(BASE+CITY*extraCities()) + data.kids*(KID+CITY*extraCities()); }
   let step = 0;
-  const data = { entry:'Solo', type:'Solo', isCaptain:false, teamName:'', quantity:1, adults:1, kids:0, children:[], cities:[], profileFile:null, spcaDonated:false };
+  const data = { entry:'Solo', type:'Solo', isCaptain:false, teamMode:'create', teamName:'', quantity:1, adults:1, kids:0, children:[], cities:[], profileFile:null, spcaDonated:false };
 
   // ---- entry type (you are always one adult; add your own kids; teams join by name) ----
   function pickType(t){
@@ -336,6 +349,40 @@
     document.getElementById('ch-solo').classList.toggle('sel', t==='solo');
     document.getElementById('ch-team').classList.toggle('sel', t==='team');
     document.getElementById('team-fields').style.display = (t==='team') ? 'block' : 'none';
+    if(t==='team') loadTeams();
+  }
+
+  // Start a new team (free text) vs join an existing one (dropdown — prevents typos).
+  function pickTeamMode(mode){
+    data.teamMode = mode;
+    data.isCaptain = (mode==='create');
+    document.getElementById('tm-create').classList.toggle('sel', mode==='create');
+    document.getElementById('tm-join').classList.toggle('sel', mode==='join');
+    document.getElementById('tm-create-field').style.display = (mode==='create') ? 'block' : 'none';
+    document.getElementById('tm-join-field').style.display = (mode==='join') ? 'block' : 'none';
+    if(mode==='join') loadTeams();
+  }
+
+  let teamsLoaded = false;
+  async function loadTeams(){
+    if(teamsLoaded) return;
+    const sel = document.getElementById('teamSelect');
+    try{
+      const { teams } = await (await fetch('/api/teams')).json();
+      teamsLoaded = true;
+      if(!teams || !teams.length){
+        sel.innerHTML = '<option value="">No teams yet</option>';
+        document.getElementById('noTeamsMsg').style.display = 'block';
+        return;
+      }
+      sel.innerHTML = '<option value="">Select your team…</option>' +
+        teams.map(function(t){
+          const v = String(t).replace(/"/g,'&quot;');
+          return '<option value="'+v+'">'+t+'</option>';
+        }).join('');
+    }catch(e){
+      sel.innerHTML = '<option value="">Teams load once the app is live</option>';
+    }
   }
 
   // ---- children (added by the registering adult; guardian signs the waiver) ----
@@ -404,10 +451,17 @@
   function validate(){
     if(step===0){
       if(data.entry==='Team'){
-        data.teamName = document.getElementById('teamName').value.trim();
-        data.isCaptain = document.getElementById('isCaptain').checked;
-        if(!data.teamName) return fail('Please enter a team name.');
-        data.type = data.isCaptain ? 'Team captain' : 'Team member';
+        if(data.teamMode==='join'){
+          data.teamName = document.getElementById('teamSelect').value;
+          data.isCaptain = false;
+          if(!data.teamName) return fail('Please choose your team from the list.');
+          data.type = 'Team member';
+        } else {
+          data.teamName = document.getElementById('teamNameNew').value.trim();
+          data.isCaptain = true;
+          if(!data.teamName) return fail('Please enter a name for your new team.');
+          data.type = 'Team captain';
+        }
       } else {
         data.type = 'Solo'; data.isCaptain = false; data.teamName = '';
       }
@@ -480,49 +534,27 @@
     document.getElementById('priceBreak').textContent = bits.join(' + ')+(extra?(' + $'+CITY+'×'+extra+' extra city each'):'')+' · first city included';
   }
 
-  // ---- read a fetch Response safely ----
-  // Reads the body as text first, then tries JSON. This avoids the iOS Safari
-  // "The string did not match the expected pattern." error that response.json()
-  // throws when the server returns an empty or non-JSON body (e.g. a raw 500),
-  // and lets us show the real HTTP status + body instead.
-  async function readJSON(res){
-    const raw = await res.text();
-    let body = null;
-    if(raw){ try{ body = JSON.parse(raw); }catch(_){ /* non-JSON body */ } }
-    return { ok: res.ok, status: res.status, data: body, raw: raw };
-  }
-
-  // ---- Cloudinary upload (no GPS needed for profile/child photos) ----
+  // ---- Cloudinary upload (no GPS needed for profile/receipt) ----
   async function uploadFile(file){
-    const signRes = await fetch('/api/cloudinary-sign',{method:'POST'});
-    const sign = await readJSON(signRes);
-    if(!sign.ok) throw new Error('photo signing failed ('+sign.status+'): '+sign.raw.slice(0,140));
-    if(!sign.data || !sign.data.cloudName || !sign.data.apiKey || !sign.data.signature){
-      throw new Error('photo upload not configured — check Cloudinary env vars on Vercel');
-    }
-    const s = sign.data;
+    const sign = await fetch('/api/cloudinary-sign',{method:'POST'}).then(r=>r.json());
     const form = new FormData();
     form.append('file',file);
-    form.append('api_key',s.apiKey);
-    form.append('timestamp',s.timestamp);
-    form.append('signature',s.signature);
-    form.append('folder',s.folder);
-    const upRes = await fetch('https://api.cloudinary.com/v1_1/'+s.cloudName+'/image/upload',{method:'POST',body:form});
-    const up = await readJSON(upRes);
-    if(up.data && up.data.error) throw new Error(up.data.error.message);
-    if(!up.data || !up.data.secure_url) throw new Error('cloudinary returned no image url ('+up.status+')');
-    return up.data.secure_url;
+    form.append('api_key',sign.apiKey);
+    form.append('timestamp',sign.timestamp);
+    form.append('signature',sign.signature);
+    form.append('folder',sign.folder);
+    const res = await fetch('https://api.cloudinary.com/v1_1/'+sign.cloudName+'/image/upload',{method:'POST',body:form});
+    const out = await res.json();
+    if(out.error) throw new Error(out.error.message);
+    return out.secure_url;
   }
 
   // ---- final submit: upload -> register -> checkout ----
   async function submit(){
     const btn = document.getElementById('nextBtn');
     const status = document.getElementById('status');
-    btn.classList.add('dim');
-    let stage = 'start';
+    btn.classList.add('dim'); status.textContent = 'Uploading your photos…';
     try{
-      stage = 'photos';
-      status.textContent = 'Uploading your photos…';
       const profilePhotoUrl = data.profileFile ? await uploadFile(data.profileFile) : '';
 
       // upload each child's photo (if added) and build name+photo list
@@ -532,9 +564,8 @@
         childData.push({ name:c.name.trim(), photo });
       }
 
-      stage = 'account';
       status.textContent = 'Creating your account…';
-      const reg = await readJSON(await fetch('/api/register',{
+      const reg = await fetch('/api/register',{
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           fullName:data.fullName, email:data.email, password:data.password, phone:data.phone,
@@ -542,24 +573,24 @@
           profilePhotoUrl, spcaDonated:!!data.spcaDonated, waiverName:data.waiverName, cities:data.cities, guardianConsent:!!data.guardianConsent,
           children:childData
         })
-      }));
-      if(!reg.ok) throw new Error((reg.data && reg.data.error) || ('register '+reg.status+': '+reg.raw.slice(0,140)));
-      if(!reg.data || !reg.data.racer || !reg.data.racer.id) throw new Error('register returned no racer id ('+reg.status+'): '+reg.raw.slice(0,140));
+      });
+      const regData = await reg.json();
+      if(!reg.ok) throw new Error(regData.error || 'Registration failed');
 
-      stage = 'checkout';
       status.textContent = 'Redirecting to secure payment…';
-      const co = await readJSON(await fetch('/api/stripe-checkout',{
+      const co = await fetch('/api/stripe-checkout',{
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          kind:'registration', racerId:reg.data.racer.id, adults:data.adults, kids:data.kids, quantity:data.quantity, cityCount:data.cities.length,
+          kind:'registration', racerId:regData.racer.id, adults:data.adults, kids:data.kids, quantity:data.quantity, cityCount:data.cities.length,
           successUrl: location.origin+'/?paid=1', cancelUrl: location.href
         })
-      }));
-      if(!co.ok || !co.data || !co.data.url) throw new Error((co.data && co.data.error) || ('checkout '+co.status+': '+co.raw.slice(0,140)));
-      window.location.href = co.data.url;
+      });
+      const coData = await co.json();
+      if(!co.ok || !coData.url) throw new Error(coData.error || 'Could not start checkout');
+      window.location.href = coData.url;
     }catch(e){
       status.textContent='';
-      document.getElementById('err').textContent = '['+stage+'] '+e.message;
+      document.getElementById('err').textContent = e.message + ' — (this completes once the app is deployed live).';
       btn.classList.remove('dim');
     }
   }
@@ -584,5 +615,6 @@
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
 <script>(function(){var t=null,r={};try{t=localStorage.getItem("ygtar_token");r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});var nm=document.getElementById("acctNm"),av=document.getElementById("acctAv");if(nm)nm.textContent=r.name||"My account";if(av){if(r.profilePhoto){av.style.backgroundImage="url("+r.profilePhoto+")";av.textContent="";}else{av.textContent=((r.name||"?").split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("")||"?").toUpperCase();}}}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
+<script src="mobile-nav.js"></script>
 </body>
 </html>
