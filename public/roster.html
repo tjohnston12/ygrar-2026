@@ -50,12 +50,27 @@
   .teamblock{margin-top:26px}
   .teamblock h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:9px;margin-bottom:13px}
   .teamblock h2 .cap{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:#f6edcf;color:#9a7a1c;padding:3px 9px;border-radius:var(--radius-pill)}
-  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-  .rcard{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:16px;display:flex;gap:13px;align-items:flex-start}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));align-items:start}
+  .rcard{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+  .rcard:hover{border-color:rgba(29,158,117,.5)}
+  .rcard.open{border-color:var(--green);box-shadow:0 6px 20px rgba(22,32,27,.07)}
+  .rcard:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  .rcard-head{display:flex;gap:13px;align-items:flex-start}
+  .rcard-main{flex:1;min-width:0}
   .rcard .av{flex:none;width:52px;height:52px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-size:22px;font-weight:700;background-size:cover;background-position:center;overflow:hidden}
   .rcard .nm{font-weight:700;font-size:15.5px}
   .rcard .meta{font-size:13px;color:var(--color-text-tertiary);margin-top:2px}
-  .rcard .kids{font-size:13px;color:var(--green-dark);margin-top:7px;display:flex;align-items:center;gap:6px}
+  .rcard .chev{flex:none;align-self:center;color:var(--color-text-tertiary);font-size:19px;transition:transform .25s}
+  .rcard.open .chev{transform:rotate(180deg)}
+  .rcard-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .28s ease,opacity .2s ease,padding .28s ease,margin .28s ease}
+  .rcard.open .rcard-detail{max-height:340px;opacity:1;margin-top:13px;padding-top:13px;border-top:1px solid var(--color-border-tertiary)}
+  .rcard .d-row{display:flex;gap:12px;align-items:flex-start;margin-top:9px}
+  .rcard .d-row:first-child{margin-top:0}
+  .rcard .d-lbl{flex:none;width:74px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-tertiary);padding-top:3px}
+  .rcard .d-val{font-size:13.5px;font-weight:600;color:var(--color-text-secondary)}
+  .rcard .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .rcard .chip{background:var(--green-soft);color:var(--green-dark);border-radius:var(--radius-pill);padding:4px 11px;font-size:12.5px;font-weight:600}
+  .rcard .chip.kidchip{background:#f6edcf;color:#9a7a1c;display:inline-flex;align-items:center;gap:5px}
   .muted{color:var(--color-text-tertiary);font-size:15px}
   @media(max-width:860px){.app{grid-template-columns:1fr}.sidebar{display:none}.topbar{display:flex}main{padding:22px 16px 48px}}
 </style>
@@ -108,12 +123,51 @@
     const av = r.photo
       ? '<div class="av" style="background-image:url('+r.photo+')"></div>'
       : '<div class="av">'+initials(r.name)+'</div>';
-    const kids = r.kids && r.kids.length
-      ? '<div class="kids"><i class="ti ti-mood-kid"></i> Junior adventurer'+(r.kids.length>1?'s':'')+': '+r.kids.map(esc).join(', ')+'</div>'
-      : '';
-    const cities = r.cities ? '<div class="meta">'+esc(r.cities)+'</div>' : '';
-    return '<div class="rcard">'+av+'<div><div class="nm">'+esc(r.name)+(r.captain?' · <span style="color:var(--gold);font-weight:700">Captain</span>':'')+'</div>'+cities+kids+'</div></div>';
+
+    const cityList = (r.cities||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const kidCount = (r.kids||[]).length;
+
+    // collapsed: quick summary; the specifics live behind the click
+    const sum = [];
+    if(cityList.length) sum.push(cityList.length+(cityList.length>1?' cities':' city'));
+    if(kidCount) sum.push(kidCount+' junior'+(kidCount>1?'s':''));
+    const summary = sum.length ? '<div class="meta">'+sum.join(' · ')+'</div>' : '';
+
+    // expanded: entry type, cities as chips, junior first names
+    const entry = r.team ? (esc(r.team)+(r.captain?' · Captain':' · Member')) : 'Solo racer';
+    let detail = '<div class="d-row"><span class="d-lbl">Entry</span><span class="d-val">'+entry+'</span></div>';
+    if(cityList.length){
+      detail += '<div class="d-row"><span class="d-lbl">Racing in</span><div class="chips">'+
+        cityList.map(c=>'<span class="chip">'+esc(c)+'</span>').join('')+'</div></div>';
+    }
+    if(kidCount){
+      detail += '<div class="d-row"><span class="d-lbl">Junior'+(kidCount>1?'s':'')+'</span><div class="chips">'+
+        r.kids.map(k=>'<span class="chip kidchip"><i class="ti ti-mood-kid"></i>'+esc(k)+'</span>').join('')+'</div></div>';
+    }
+
+    const cap = r.captain ? ' · <span style="color:var(--gold);font-weight:700">Captain</span>' : '';
+    return '<div class="rcard" role="button" tabindex="0" aria-expanded="false">'+
+        '<div class="rcard-head">'+av+
+          '<div class="rcard-main"><div class="nm">'+esc(r.name)+cap+'</div>'+summary+'</div>'+
+          '<i class="ti ti-chevron-down chev"></i>'+
+        '</div>'+
+        '<div class="rcard-detail">'+detail+'</div>'+
+      '</div>';
   }
+
+  // click / keyboard to expand a racer record (one open at a time)
+  const rosterEl = document.getElementById('roster');
+  function toggleCard(el){
+    const isOpen = el.classList.contains('open');
+    rosterEl.querySelectorAll('.rcard.open').forEach(c=>{ c.classList.remove('open'); c.setAttribute('aria-expanded','false'); });
+    if(!isOpen){ el.classList.add('open'); el.setAttribute('aria-expanded','true'); }
+  }
+  rosterEl.addEventListener('click', e=>{ const c=e.target.closest('.rcard'); if(c) toggleCard(c); });
+  rosterEl.addEventListener('keydown', e=>{
+    if(e.key!=='Enter' && e.key!==' ') return;
+    const c=e.target.closest('.rcard'); if(!c) return;
+    e.preventDefault(); toggleCard(c);
+  });
 
   async function load(){
     let data;
@@ -158,6 +212,6 @@
 </script>
 <script>(function(){try{var r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");if(r&&r.isAdmin){document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="";});}}catch(e){}})();</script>
 <script>(function(){var t=null,r={};try{t=localStorage.getItem("ygtar_token");r=JSON.parse(localStorage.getItem("ygtar_racer")||"{}");}catch(e){}if(t){document.querySelectorAll(".auth-out").forEach(function(e){e.style.display="none";});document.querySelectorAll(".auth-in").forEach(function(e){e.style.display="";});var nm=document.getElementById("acctNm"),av=document.getElementById("acctAv");if(nm)nm.textContent=r.name||"My account";if(av){if(r.profilePhoto){av.style.backgroundImage="url("+r.profilePhoto+")";av.textContent="";}else{av.textContent=((r.name||"?").split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("")||"?").toUpperCase();}}}window.ycarLogout=function(){try{localStorage.removeItem("ygtar_token");localStorage.removeItem("ygtar_racer");}catch(e){}window.location.href="index.html";};})();</script>
-<script src="mobile-nav.js"></script>
+<script src="menu.js"></script>
 </body>
 </html>
