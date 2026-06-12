@@ -10,7 +10,8 @@ export default async function handler(req, res) {
   allowCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const rows = await find('Racers', { filter: "NOT({Team name}='')" });
+  // Exclude auto-created family units (Type='Family') — those aren't joinable.
+  const rows = await find('Racers', { filter: "AND(NOT({Team name}=''), NOT({Type}='Family'))" });
   const teams = [...new Set(rows.map((r) => (r['Team name'] || '').trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
 

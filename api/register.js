@@ -1,7 +1,7 @@
 // api/register.js — create a racer account (status: Pending payment).
 // After this returns, the client calls /api/stripe-checkout to collect the $5/racer.
 
-import { create, update, findOne, esc } from '../lib/airtable.js';
+import { create, findOne, esc } from '../lib/airtable.js';
 import { hashPassword } from '../lib/auth.js';
 
 export default async function handler(req, res) {
@@ -21,26 +21,34 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  // A real (paid/active) account blocks re-use. But an abandoned, never-paid
-  // registration is resumable — we re-use that record instead of erroring, so a
-  // racer who didn't finish payment can come back and try again.
+  // No duplicate accounts.
   const existing = await findOne('Racers', `{Email}='${esc(email)}'`);
-  if (existing && existing['Registration status'] !== 'Pending payment') {
-    return res.status(409).json({ error: 'An account with that email already exists' });
-  }
+  if (existing) return res.status(409).json({ error: 'An account with that email already exists' });
 
   // children may arrive as ["Name", ...] or [{name, photo}, ...]
   const childList = Array.isArray(children) ? children : [];
   const childNames = childList.map((c) => (typeof c === 'string' ? c : (c && c.name) || '')).filter(Boolean);
   const childPhotos = childList.map((c) => (c && c.photo) || '').filter(Boolean);
 
-  const fields = {
+  // A solo racer who registers children is a self-contained "family unit":
+  // auto-group them under a family team name so the roster shows them together
+  // instead of as a lone solo. These are NOT joinable by others — teams.js
+  // excludes Type='Family' from the join-a-team picker.
+  let effectiveType = type || 'Solo';
+  let effectiveTeam = teamName || '';
+  if (effectiveType === 'Solo' && childNames.length > 0) {
+    effectiveType = 'Family';
+    const lastName = (fullName || '').trim().split(/\s+/).pop() || 'Adventure';
+    effectiveTeam = `${lastName} Family`;
+  }
+
+  const racer = await create('Racers', {
     'Full name': fullName,
     'Email': email,
     'Password hash': await hashPassword(password),
     'Phone': phone || '',
-    'Type': type || 'Solo',
-    'Team name': teamName || '',
+    'Type': effectiveType,
+    'Team name': effectiveTeam,
     'Emergency contact name': emergencyName || '',
     'Emergency contact phone': emergencyPhone || '',
     'Profile photo URL': profilePhotoUrl || '',
@@ -54,11 +62,7 @@ export default async function handler(req, res) {
     'Children photos': childPhotos.join(', '),
     'Registration status': 'Pending payment',
     'Registered at': new Date().toISOString(),
-  };
-
-  const racer = existing
-    ? await update('Racers', existing.id, fields)   // resume the abandoned attempt
-    : await create('Racers', fields);
+  });
 
   // Don't leak the hash back to the browser.
   delete racer['Password hash'];
