@@ -276,12 +276,18 @@
           latitude:parseFloat(lat), longitude:parseFloat(lng), difficulty:document.getElementById('pl-diff').value,
           familyFriendly:document.getElementById('pl-family').checked, photoUrl })
       });
-      const data=await res.json();
+      const data=await readJSON(res);
       if(!res.ok) throw new Error(data.error||'Could not place the point');
       out.className='result win'; out.style.display='block';
       out.innerHTML='<h3>It\'s live! 🚩</h3><p>Your control point is now on the map for everyone to chase. Nicely done — and thanks for keeping it safe and reachable.</p>';
       btn.style.display='none'; document.getElementById('pl-decline').style.display='none';
     }catch(e){ out.className='result lose'; out.style.display='block'; out.innerHTML='<p>'+e.message+'</p>'; btn.classList.remove('dim'); }
+  }
+
+  async function readJSON(res){
+    const text = await res.text();
+    try{ return text ? JSON.parse(text) : {}; }
+    catch(e){ throw new Error('Server error ('+res.status+') — please try again in a moment.'); }
   }
 
   async function submitProof(){
@@ -296,7 +302,7 @@
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
         body: JSON.stringify({ cpId:state.cpId, url, latitude:state.gps.latitude, longitude:state.gps.longitude, capturedAt:state.capturedAt })
       });
-      const data = await res.json();
+      const data = await readJSON(res);
       if(!res.ok){
         // Real server error (e.g. not registered in this city) — show it plainly.
         result.className='result lose'; result.style.display='block';
