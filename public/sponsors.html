@@ -132,12 +132,17 @@
   const TIERS=['Title','Gold','Silver','Community'];
   function esc(s){ return (s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
+  function fixUrl(u){ u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; }
   function card(s){
-    const visit = s.website ? '<a class="visit" href="'+s.website+'" target="_blank" rel="noopener">Visit <i class="ti ti-external-link"></i></a>' : '';
+    const url = fixUrl(s.website);
+    const visit = url ? '<span class="visit">Visit <i class="ti ti-external-link"></i></span>' : '';
     const logo = s.logo ? '<img class="logo-img" src="'+s.logo+'" alt="'+esc(s.name)+'">' : '<div class="wordmark">'+esc(s.name)+'</div>';
     const name = s.logo ? '<div class="nm">'+esc(s.name)+'</div>' : '';
     const blurb = s.blurb ? '<div class="bl">'+esc(s.blurb)+'</div>' : '';
-    return '<div class="spon">'+logo+name+blurb+visit+'</div>';
+    const inner = logo+name+blurb+visit;
+    return url
+      ? '<a class="spon" href="'+url+'" target="_blank" rel="noopener">'+inner+'</a>'
+      : '<div class="spon">'+inner+'</div>';
   }
 
   function renderEmpty(){

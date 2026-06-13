@@ -333,16 +333,18 @@
     if(!grid) return;
     const ORDER = { Title:0, Gold:1, Silver:2, Community:3 };
     const esc = (s)=> (s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+    const fixUrl = (u)=>{ u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; };
     try{
       const r = await (await fetch('/api/sponsors')).json();
       const sponsors = (r.sponsors||[]).slice().sort((a,b)=>(ORDER[a.tier]??9)-(ORDER[b.tier]??9));
       if(!sponsors.length) return; // leave the "Your Logo" placeholders as the empty state
       grid.innerHTML = sponsors.map(s=>{
+        const url = fixUrl(s.website);
         const inner = s.logo
           ? '<img src="'+s.logo+'" alt="'+esc(s.name)+'">'
           : '<span class="wm">'+esc(s.name)+'</span>';
-        return s.website
-          ? '<a class="spon filled" href="'+s.website+'" target="_blank" rel="noopener" title="'+esc(s.name)+'">'+inner+'</a>'
+        return url
+          ? '<a class="spon filled" href="'+url+'" target="_blank" rel="noopener" title="'+esc(s.name)+'">'+inner+'</a>'
           : '<div class="spon filled" title="'+esc(s.name)+'">'+inner+'</div>';
       }).join('');
     }catch(e){ /* leave placeholders on error */ }
