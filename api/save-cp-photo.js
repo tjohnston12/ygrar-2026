@@ -37,6 +37,7 @@ export default async function handler(req, res) {
   const racer = requireAuth(req, res);
   if (!racer) return; // 401 already sent
 
+  try {
   // Must have completed registration payment (status set to Active by the Stripe webhook).
   const me = await findOne('Racers', `RECORD_ID()='${esc(racer.id)}'`);
   if (!me || me['Registration status'] !== 'Active') {
@@ -146,4 +147,10 @@ export default async function handler(req, res) {
       ? 'Verified! You can place the next CP in this chain.'
       : `Photo was ${Math.round(metres)} m from the control point — try getting closer.`,
   });
+  } catch (err) {
+    console.error('save-cp-photo error:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Could not save your submission: ' + ((err && err.message) || 'server error') });
+    }
+  }
 }
