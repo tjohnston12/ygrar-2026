@@ -94,6 +94,7 @@ export default async function handler(req, res) {
   // Placing fills it in (-> Live); declining removes it; until then it shows as waiting.
   let earnedPlacement = false, placeholderId = null;
   if (verified) {
+   try {
     await update('CPs', cpId, { 'Last verified at': claimTime });
 
     const teamName = (me['Team name'] || '').trim() || me['Full name'] || racer.name || 'A racer';
@@ -135,6 +136,12 @@ export default async function handler(req, res) {
       });
       earnedPlacement = true; placeholderId = ph.id;
     }
+   } catch (placeErr) {
+      // The claim is already recorded above — don't let a next-CP reservation
+      // problem (e.g. a missing CPs field) block the racer's verified point.
+      console.error('placement reservation skipped:', placeErr);
+      earnedPlacement = false; placeholderId = null;
+   }
   }
 
   return res.status(200).json({

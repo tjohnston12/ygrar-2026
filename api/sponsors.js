@@ -13,11 +13,11 @@ export default async function handler(req, res) {
   const rows = await find('Sponsors', { filter: '{Active}' });
   const sponsors = rows
     .map((r) => ({
-      name: r.Name || '',
+      name: r.Name || r['Sponsor name'] || '',
       tier: r.Tier || 'Community',
-      logo: r['Logo URL'] || '',
-      website: r.Website || '',
-      blurb: r.Blurb || '',
+      logo: r['Logo URL'] || r['Logo Url'] || r.Logo || '',
+      website: r.Website || r['Website URL'] || r['Web site'] || r.URL || r.Url || r.Site || r.Link || '',
+      blurb: r.Blurb || r.Description || '',
     }))
     .sort((a, b) => (ORDER[a.tier] ?? 9) - (ORDER[b.tier] ?? 9));
 
